@@ -40,12 +40,20 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   Future<void> _saveCar(Car car) async {
-    if (car.id == null) {
-      await dbHelper.insertCar(car);
-    } else {
-      await dbHelper.updateCar(car);
+    try {
+      if (car.id == null) {
+        await dbHelper.insertCar(car);
+      } else {
+        await dbHelper.updateCar(car);
+      }
+      await _loadCars(); // Listeyi yenile
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Araç kaydedilirken hata oluştu: $e')),
+        );
+      }
     }
-    _loadCars();
   }
 
   Future<void> _deleteCar(int id) async {
@@ -128,9 +136,48 @@ class _CarListPageState extends State<CarListPage> {
             title: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    '${car.brand} ${car.model}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        car.brand.toUpperCase(),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            car.model,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                ),
+                          ),
+                          if (car.package != null &&
+                              car.package!.isNotEmpty) ...[
+                            Text(
+                              ' - ',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            Text(
+                              car.package!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 if (car.isSold)
@@ -158,12 +205,18 @@ class _CarListPageState extends State<CarListPage> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 12), // Boşluk artırıldı
                 Text(
                   '${car.year} - ${car.price} TL',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8), // Yeni boşluk eklendi
+                if (car.damageRecord != '0')
+                  Text(
+                    'Hasar Kaydı: ${car.damageRecord} TL',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                const SizedBox(height: 8), // Yeni boşluk eklendi
                 Text(
                   'Eklenme: ${dateFormat.format(car.addedDate)}',
                   style: Theme.of(context).textTheme.bodySmall,
@@ -175,6 +228,37 @@ class _CarListPageState extends State<CarListPage> {
                           color: Theme.of(context).colorScheme.secondary,
                         ),
                   ),
+                // Açıklama ile üst kısım arasına ekstra boşluk
+                if (car.description != null && car.description!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceVariant
+                          .withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Açıklama:',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          car.description!,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             trailing: Row(
@@ -238,54 +322,127 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   void _showAddCarDialog() {
+    final formKey = GlobalKey<FormState>();
     String brand = '';
     String model = '';
+    String package = ''; // Yeni eklenen paket bilgisi
     String year = '';
     String price = '';
+    String damageRecord = '0';
+    String description = '';
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Yeni Araç Ekle'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Marka',
-                  prefixIcon: Icon(Icons.branding_watermark),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Marka',
+                    prefixIcon: Icon(Icons.branding_watermark),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Marka gereklidir';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => brand = value ?? '',
                 ),
-                onChanged: (value) => brand = value,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Model',
-                  prefixIcon: Icon(Icons.model_training),
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Model',
+                    prefixIcon: Icon(Icons.model_training),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Model gereklidir';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => model = value ?? '',
                 ),
-                onChanged: (value) => model = value,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Yıl',
-                  prefixIcon: Icon(Icons.calendar_today),
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Paket (Opsiyonel)',
+                    prefixIcon: Icon(Icons.style),
+                    hintText: 'Örn: Premium, Elegance, Urban...',
+                  ),
+                  onSaved: (value) => package = value ?? '',
                 ),
-                keyboardType: TextInputType.number,
-                onChanged: (value) => year = value,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Fiyat',
-                  prefixIcon: Icon(Icons.attach_money),
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Yıl',
+                    prefixIcon: Icon(Icons.calendar_today),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Yıl gereklidir';
+                    }
+                    if (int.tryParse(value) == null) {
+                      return 'Geçerli bir yıl giriniz';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => year = value ?? '',
                 ),
-                keyboardType: TextInputType.number,
-                onChanged: (value) => price = value,
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Fiyat (TL)',
+                    prefixIcon: Icon(Icons.attach_money),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Fiyat gereklidir';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Geçerli bir fiyat giriniz';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => price = value ?? '',
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Hasar Kaydı (TL)',
+                    prefixIcon: Icon(Icons.warning_amber),
+                  ),
+                  keyboardType: TextInputType.number,
+                  initialValue: '0',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Hasar kaydı gereklidir';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Geçerli bir değer giriniz';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => damageRecord = value ?? '0',
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Açıklama',
+                    prefixIcon: Icon(Icons.description),
+                  ),
+                  maxLines: 3,
+                  onSaved: (value) => description = value ?? '',
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -295,32 +452,20 @@ class _CarListPageState extends State<CarListPage> {
           ),
           FilledButton(
             onPressed: () {
-              if (brand.isNotEmpty &&
-                  model.isNotEmpty &&
-                  year.isNotEmpty &&
-                  price.isNotEmpty) {
-                if (int.tryParse(year) == null ||
-                    double.tryParse(price) == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Yıl ve fiyat sayısal değerler olmalıdır.'),
-                    ),
-                  );
-                  return;
-                }
-
+              if (formKey.currentState?.validate() ?? false) {
+                formKey.currentState?.save();
                 final newCar = Car(
                   brand: brand,
                   model: model,
+                  package: package.isNotEmpty ? package : null,
                   year: year,
                   price: price,
                   addedDate: DateTime.now(),
+                  damageRecord: damageRecord,
+                  description: description.isNotEmpty ? description : null,
                 );
 
-                setState(() {
-                  cars.add(newCar);
-                  _saveCar(newCar);
-                });
+                _saveCar(newCar);
                 Navigator.pop(context);
               }
             },
