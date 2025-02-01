@@ -24,7 +24,6 @@ class _CarListPageState extends State<CarListPage> {
   Future<void> _loadCars() async {
     try {
       final loadedCars = await dbHelper.getCars();
-      debugPrint('Yüklenen araç sayısı: ${loadedCars.length}');
       setState(() {
         cars.clear(); // Önceki araçları temizle
         cars.addAll(loadedCars);

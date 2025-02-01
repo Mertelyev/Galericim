@@ -18,106 +18,55 @@ class DBHelper {
   }
 
   Future<Database> _initDB() async {
-    try {
-      var path = join(await getDatabasesPath(), 'cars.db');
-      if (kIsWeb) {
-        databaseFactory = databaseFactoryFfiWeb;
-        path = 'cars_web.db';
-      }
-      debugPrint('Veritabanı yolu: $path');
-
-      return await openDatabase(
-        path,
-        version: 1,
-        onCreate: _createDB,
-        onOpen: (db) {
-          debugPrint('Veritabanı açıldı');
-          _checkTableExists(db);
-        },
-      );
-    } catch (e) {
-      debugPrint('Veritabanı oluşturulurken hata: $e');
-      rethrow;
+    var path = join(await getDatabasesPath(), 'cars.db');
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      path = 'cars_web.db';
     }
-  }
 
-  Future<void> _checkTableExists(Database db) async {
-    try {
-      var tables = await db.query('sqlite_master',
-          where: 'type = ? AND name = ?', whereArgs: ['table', 'cars']);
-      debugPrint('Tablolar: $tables');
-    } catch (e) {
-      debugPrint('Tablo kontrolünde hata: $e');
-    }
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _createDB,
+    );
   }
 
   Future<void> _createDB(Database db, int version) async {
-    try {
-      await db.execute('''
-        CREATE TABLE cars (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          brand TEXT,
-          model TEXT,
-          year TEXT,
-          price TEXT,
-          addedDate TEXT,
-          soldDate TEXT,
-          isSold INTEGER
-        )
-      ''');
-      debugPrint('Tablo oluşturuldu');
-    } catch (e) {
-      debugPrint('Tablo oluşturulurken hata: $e');
-      rethrow;
-    }
+    await db.execute('''
+      CREATE TABLE cars (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        brand TEXT,
+        model TEXT,
+        year TEXT,
+        price TEXT,
+        addedDate TEXT,
+        soldDate TEXT,
+        isSold INTEGER
+      )
+    ''');
   }
 
   Future<void> insertCar(Car car) async {
-    try {
-      final db = await database;
-      await db.insert('cars', car.toMap(),
-          conflictAlgorithm: ConflictAlgorithm.replace);
-      debugPrint('Araç eklendi: ${car.brand} ${car.model}');
-    } catch (e) {
-      debugPrint('Araç eklenirken hata: $e');
-      rethrow;
-    }
+    final db = await database;
+    await db.insert('cars', car.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Car>> getCars() async {
-    try {
-      final db = await database;
-      final List<Map<String, dynamic>> maps = await db.query('cars');
-      debugPrint('Araçlar yüklendi: ${maps.length} adet');
-      return List.generate(maps.length, (i) {
-        return Car.fromMap(maps[i]);
-      });
-    } catch (e) {
-      debugPrint('Araçlar yüklenirken hata: $e');
-      rethrow;
-    }
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('cars');
+    return List.generate(maps.length, (i) {
+      return Car.fromMap(maps[i]);
+    });
   }
 
   Future<void> updateCar(Car car) async {
-    try {
-      final db = await database;
-      await db
-          .update('cars', car.toMap(), where: 'id = ?', whereArgs: [car.id]);
-      debugPrint('Araç güncellendi: ${car.brand} ${car.model}');
-    } catch (e) {
-      debugPrint('Araç güncellenirken hata: $e');
-      rethrow;
-    }
+    final db = await database;
+    await db.update('cars', car.toMap(), where: 'id = ?', whereArgs: [car.id]);
   }
 
   Future<void> deleteCar(int id) async {
-    try {
-      final db = await database;
-      await db.delete('cars', where: 'id = ?', whereArgs: [id]);
-      debugPrint('Araç silindi: $id');
-    } catch (e) {
-      debugPrint('Araç silinirken hata: $e');
-      rethrow;
-    }
+    final db = await database;
+    await db.delete('cars', where: 'id = ?', whereArgs: [id]);
   }
 }

@@ -4,7 +4,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:flutter/foundation.dart'; // kIsWeb için import edildi
 import './theme.dart';
-import './trendingpage.dart';
+import './trends.dart';
+import './statistic.dart';
 import './settings.dart';
 import './carlist.dart';
 
@@ -61,7 +62,8 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const CarTrendsPage(),
+    const TrendsPage(),
+    const StatisticPage(),
     const CarListPage(),
     const SettingsPage(),
   ];
@@ -82,6 +84,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.trending_up_outlined),
             selectedIcon: Icon(Icons.trending_up),
             label: 'Trendler',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'İstatistikler',
           ),
           NavigationDestination(
             icon: Icon(Icons.directions_car_outlined),
