@@ -2,37 +2,8 @@ import 'package:flutter/material.dart';
 import 'db_helper.dart';
 import 'car.dart';
 
-class TrendsPage extends StatefulWidget {
+class TrendsPage extends StatelessWidget {
   const TrendsPage({super.key});
-
-  @override
-  State<TrendsPage> createState() => _TrendsPageState();
-}
-
-class _TrendsPageState extends State<TrendsPage> {
-  final dbHelper = DBHelper();
-  List<Car> cars = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCars();
-  }
-
-  Future<void> _loadCars() async {
-    try {
-      final loadedCars = await dbHelper.getCars();
-      setState(() {
-        cars = loadedCars;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,25 +11,30 @@ class _TrendsPageState extends State<TrendsPage> {
       appBar: AppBar(
         title: const Text('Otomobil Trendleri'),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadCars,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: cars.length,
-                itemBuilder: (context, index) {
-                  final car = cars[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text('${car.brand} ${car.model}'),
-                      subtitle:
-                          Text('Yıl: ${car.year}, Fiyat: ${car.price} TL'),
-                    ),
-                  );
-                },
-              ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.show_chart,
+              size: 100,
+              color: Theme.of(context).primaryColor.withOpacity(0.5),
             ),
+            const SizedBox(height: 16),
+            Text(
+              'Yakında Burada',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Otomobil satış trendleri burada görüntülenecek',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

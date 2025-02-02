@@ -136,47 +136,36 @@ class _CarListPageState extends State<CarListPage> {
             title: Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
                       Text(
-                        car.brand.toUpperCase(),
+                        car.brand,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            car.model,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
+                      const Text(' - '),
+                      Text(
+                        car.model,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w400,
                                 ),
-                          ),
-                          if (car.package != null &&
-                              car.package!.isNotEmpty) ...[
-                            Text(
-                              ' - ',
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            Text(
-                              car.package!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
-                                  ),
-                            ),
-                          ],
-                        ],
                       ),
+                      if (car.package != null && car.package!.isNotEmpty) ...[
+                        const Text(' - '),
+                        Text(
+                          car.package!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
