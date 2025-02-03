@@ -10,6 +10,10 @@ class Car {
   bool isSold;
   final String damageRecord;
   final String? description;
+  final String? customerName;
+  final String? customerCity;
+  final String? customerPhone;
+  final String? customerTcNo;
 
   Car({
     this.id,
@@ -23,6 +27,10 @@ class Car {
     this.isSold = false,
     this.damageRecord = '0',
     this.description,
+    this.customerName,
+    this.customerCity,
+    this.customerPhone,
+    this.customerTcNo,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +46,10 @@ class Car {
       'isSold': isSold ? 1 : 0,
       'damageRecord': damageRecord,
       'description': description,
+      'customerName': customerName,
+      'customerCity': customerCity,
+      'customerPhone': customerPhone,
+      'customerTcNo': customerTcNo,
     };
   }
 
@@ -55,6 +67,10 @@ class Car {
       isSold: map['isSold'] == 1,
       damageRecord: map['damageRecord']?.toString() ?? '0',
       description: map['description'],
+      customerName: map['customerName'],
+      customerCity: map['customerCity'],
+      customerPhone: map['customerPhone'],
+      customerTcNo: map['customerTcNo'],
     );
   }
 

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class DBHelper {
-  static const int _latestVersion = 4; // Versiyon arttırıldı
+  static const int _latestVersion = 5; // Version increased
   static const String _tableName = 'cars';
 
   // Veritabanı şema değişikliklerini takip eden map
@@ -26,7 +26,13 @@ class DBHelper {
       'ALTER TABLE $_tableName ADD COLUMN damageRecord TEXT NOT NULL DEFAULT "0"'
     ],
     3: ['ALTER TABLE $_tableName ADD COLUMN description TEXT'],
-    4: ['ALTER TABLE cars ADD COLUMN package TEXT']
+    4: ['ALTER TABLE cars ADD COLUMN package TEXT'],
+    5: [
+      '''ALTER TABLE cars ADD COLUMN customerName TEXT''',
+      '''ALTER TABLE cars ADD COLUMN customerCity TEXT''',
+      '''ALTER TABLE cars ADD COLUMN customerPhone TEXT''',
+      '''ALTER TABLE cars ADD COLUMN customerTcNo TEXT''',
+    ],
   };
 
   static final DBHelper _instance = DBHelper._internal();
