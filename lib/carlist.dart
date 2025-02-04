@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Tarih formatlaması için eklendi
 import 'db_helper.dart';
 import 'car.dart';
+import 'widgets/car_form.dart'; // Add this import
 
 class CarListPage extends StatefulWidget {
   const CarListPage({super.key});
@@ -18,6 +19,14 @@ class _CarListPageState extends State<CarListPage> {
   bool isLoading = true;
   bool isSearching = false;
   final searchController = TextEditingController();
+
+  // Filtreleme seçenekleri için
+  String? selectedBrand;
+  String? selectedYear;
+  RangeValues? priceRange;
+  bool showOnlySoldCars = false;
+  bool showOnlyInStock = false; // Yeni eklenen değişken
+  String? selectedFuelType; // Yeni değişken ekle
 
   @override
   void initState() {
@@ -88,12 +97,29 @@ class _CarListPageState extends State<CarListPage> {
         final searchLower = query.toLowerCase().trim();
 
         filteredCars = cars.where((car) {
+          // Araç bilgileri araması
           final brandMatch = car.brand.toLowerCase().contains(searchLower);
           final modelMatch = car.model.toLowerCase().contains(searchLower);
           final packageMatch =
               car.package?.toLowerCase().contains(searchLower) ?? false;
 
-          return brandMatch || modelMatch || packageMatch;
+          // Müşteri bilgileri araması
+          final customerNameMatch =
+              car.customerName?.toLowerCase().contains(searchLower) ?? false;
+          final customerCityMatch =
+              car.customerCity?.toLowerCase().contains(searchLower) ?? false;
+          final customerPhoneMatch =
+              car.customerPhone?.toLowerCase().contains(searchLower) ?? false;
+          final customerTcNoMatch =
+              car.customerTcNo?.toLowerCase().contains(searchLower) ?? false;
+
+          return brandMatch ||
+              modelMatch ||
+              packageMatch ||
+              customerNameMatch ||
+              customerCityMatch ||
+              customerPhoneMatch ||
+              customerTcNoMatch;
         }).toList();
 
         // Sonuçları alaka düzeyine göre sırala
@@ -109,20 +135,28 @@ class _CarListPageState extends State<CarListPage> {
   int _getSearchScore(Car car, String query) {
     int score = 0;
 
-    // Tam eşleşmeler
+    // Tam eşleşmeler (en yüksek öncelik)
     if (car.brand.toLowerCase() == query) score += 100;
     if (car.model.toLowerCase() == query) score += 100;
     if (car.package?.toLowerCase() == query) score += 100;
+    if (car.customerName?.toLowerCase() == query) score += 100;
+    if (car.customerTcNo?.toLowerCase() == query) score += 100;
 
-    // Başlangıç eşleşmeleri
+    // Başlangıç eşleşmeleri (orta öncelik)
     if (car.brand.toLowerCase().startsWith(query)) score += 50;
     if (car.model.toLowerCase().startsWith(query)) score += 50;
     if (car.package?.toLowerCase().startsWith(query) ?? false) score += 50;
+    if (car.customerName?.toLowerCase().startsWith(query) ?? false) score += 50;
+    if (car.customerCity?.toLowerCase().startsWith(query) ?? false) score += 50;
 
-    // İçerik eşleşmeleri
+    // İçerik eşleşmeleri (düşük öncelik)
     if (car.brand.toLowerCase().contains(query)) score += 25;
     if (car.model.toLowerCase().contains(query)) score += 25;
     if (car.package?.toLowerCase().contains(query) ?? false) score += 25;
+    if (car.customerName?.toLowerCase().contains(query) ?? false) score += 25;
+    if (car.customerCity?.toLowerCase().contains(query) ?? false) score += 25;
+    if (car.customerPhone?.toLowerCase().contains(query) ?? false) score += 25;
+    if (car.customerTcNo?.toLowerCase().contains(query) ?? false) score += 25;
 
     return score;
   }
@@ -137,7 +171,8 @@ class _CarListPageState extends State<CarListPage> {
                 controller: searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Marka, model veya paket ara...',
+                  hintText:
+                      'Araç veya müşteri bilgilerinde ara...', // Hint text güncellendi
                   border: InputBorder.none,
                   hintStyle: Theme.of(context).brightness == Brightness.dark
                       ? TextStyle(color: Colors.white.withOpacity(0.7))
@@ -160,6 +195,10 @@ class _CarListPageState extends State<CarListPage> {
                 });
               },
             ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterDialog,
+          ),
         ],
       ),
       body: isLoading
@@ -229,6 +268,8 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   Widget _buildCarTile(Car car) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       child: InkWell(
         // Add this
@@ -293,18 +334,54 @@ class _CarListPageState extends State<CarListPage> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 12), // Boşluk artırıldı
-                  Text(
-                    '${car.year} - ${car.price} TL',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  const SizedBox(height: 12),
+                  // Model yılı, kilometre ve yakıt bilgisi aynı satırda
+                  Row(
+                    children: [
+                      Text(
+                        car.year,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: isDark ? Colors.white70 : null,
+                            ),
+                      ),
+                      if (car.kilometers != null) ...[
+                        Text(
+                          ' • ${car.kilometers} KM',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: isDark ? Colors.white70 : null,
+                                  ),
+                        ),
+                      ],
+                      if (car.fuelType != null) ...[
+                        Text(
+                          ' • ${car.fuelType}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: isDark ? Colors.white70 : null,
+                                  ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 8), // Yeni boşluk eklendi
+                  const SizedBox(height: 8),
+
+                  Text(
+                    '${car.price} TL',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? Colors.white
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
                   if (car.damageRecord != '0')
                     Text(
                       'Hasar Kaydı: ${car.damageRecord} TL',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                  const SizedBox(height: 8), // Yeni boşluk eklendi
+                  const SizedBox(height: 8),
                   Text(
                     'Eklenme: ${dateFormat.format(car.addedDate)}',
                     style: Theme.of(context).textTheme.bodySmall,
@@ -316,7 +393,7 @@ class _CarListPageState extends State<CarListPage> {
                             color: Theme.of(context).colorScheme.secondary,
                           ),
                     ),
-                  // Açıklama ile üst kısım arasına ekstra boşluk
+                  // Açıklama bölümü
                   if (car.description != null &&
                       car.description!.isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -325,7 +402,7 @@ class _CarListPageState extends State<CarListPage> {
                       decoration: BoxDecoration(
                         color: Theme.of(context)
                             .colorScheme
-                            .surfaceVariant
+                            .surfaceContainerHighest
                             .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -353,6 +430,21 @@ class _CarListPageState extends State<CarListPage> {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (car.isSold)
+                    Flexible(
+                      child: IconButton(
+                        icon: const Icon(Icons.person),
+                        tooltip: 'Müşteri Bilgileri',
+                        onPressed: () => _showCustomerDetails(car),
+                      ),
+                    ),
+                  Flexible(
+                    child: IconButton(
+                      icon: const Icon(Icons.edit),
+                      tooltip: 'Düzenle',
+                      onPressed: () => _showEditCarDialog(car),
+                    ),
+                  ),
                   Flexible(
                     child: IconButton(
                       icon: car.isSold
@@ -409,65 +501,34 @@ class _CarListPageState extends State<CarListPage> {
 
   void _showToggleSoldDialog(Car car) {
     final formKey = GlobalKey<FormState>();
-    String? customerName;
-    String? customerCity;
-    String? customerPhone;
-    String? customerTcNo;
+    final Map<String, String> formData = {};
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Satış Durumu Değişikliği'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Bu aracı satıldı olarak işaretlemek istiyor musunuz?'),
-                const SizedBox(height: 16),
-                const Text(
-                  'Müşteri Bilgileri (Opsiyonel)',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Müşteri Adı',
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  onSaved: (value) => customerName = value?.trim(),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Şehir',
-                    prefixIcon: Icon(Icons.location_city),
-                  ),
-                  onSaved: (value) => customerCity = value?.trim(),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Telefon',
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  onSaved: (value) => customerPhone = value?.trim(),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'TC Kimlik No',
-                    prefixIcon: Icon(Icons.badge),
-                  ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 11,
-                  onSaved: (value) => customerTcNo = value?.trim(),
-                ),
-              ],
-            ),
-          ),
+        title: const Text('Satış Durumu Değişikliği'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(car.isSold
+                ? 'Bu aracın satıldı işaretini kaldırmak istiyor musunuz?'
+                : 'Bu aracı satıldı olarak işaretlemek istiyor musunuz?'),
+            const SizedBox(height: 16),
+            if (!car.isSold) ...[
+              const Text(
+                'Müşteri Bilgileri (Opsiyonel)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              CarForm(
+                formKey: formKey,
+                isCustomerForm: true,
+                onSave: (values) {
+                  formData.addAll(values);
+                },
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(
@@ -477,49 +538,38 @@ class _CarListPageState extends State<CarListPage> {
           FilledButton(
             onPressed: () {
               formKey.currentState?.save();
-              setState(() {
-                if (!car.isSold) {
-                  // Satılma işlemi
-                  final updatedCar = Car(
-                    id: car.id,
-                    brand: car.brand,
-                    model: car.model,
-                    package: car.package,
-                    year: car.year,
-                    price: car.price,
-                    addedDate: car.addedDate,
-                    isSold: true, // Doğrudan true olarak ayarla
-                    soldDate: DateTime.now(), // Şimdiki zamanı ayarla
-                    damageRecord: car.damageRecord,
-                    description: car.description,
-                    customerName: customerName,
-                    customerCity: customerCity,
-                    customerPhone: customerPhone,
-                    customerTcNo: customerTcNo,
-                  );
-                  _saveCar(updatedCar);
-                } else {
-                  // Satış iptali
-                  final updatedCar = Car(
-                    id: car.id,
-                    brand: car.brand,
-                    model: car.model,
-                    package: car.package,
-                    year: car.year,
-                    price: car.price,
-                    addedDate: car.addedDate,
-                    isSold: false,
-                    soldDate: null,
-                    damageRecord: car.damageRecord,
-                    description: car.description,
-                    customerName: null,
-                    customerCity: null,
-                    customerPhone: null,
-                    customerTcNo: null,
-                  );
-                  _saveCar(updatedCar);
-                }
-              });
+              final updatedCar = car.isSold
+                  ? Car(
+                      id: car.id,
+                      brand: car.brand,
+                      model: car.model,
+                      package: car.package,
+                      year: car.year,
+                      price: car.price,
+                      addedDate: car.addedDate,
+                      isSold: false,
+                      soldDate: null,
+                      damageRecord: car.damageRecord,
+                      description: car.description,
+                    )
+                  : Car(
+                      id: car.id,
+                      brand: car.brand,
+                      model: car.model,
+                      package: car.package,
+                      year: car.year,
+                      price: car.price,
+                      addedDate: car.addedDate,
+                      isSold: true,
+                      soldDate: DateTime.now(),
+                      damageRecord: car.damageRecord,
+                      description: car.description,
+                      customerName: formData['customerName'],
+                      customerCity: formData['customerCity'],
+                      customerPhone: formData['customerPhone'],
+                      customerTcNo: formData['customerTcNo'],
+                    );
+              _saveCar(updatedCar);
               Navigator.pop(context);
             },
             child: Text((car.isSold ? 'GERİ AL' : 'SATILDI').toUpperCase()),
@@ -531,127 +581,17 @@ class _CarListPageState extends State<CarListPage> {
 
   void _showAddCarDialog() {
     final formKey = GlobalKey<FormState>();
-    String brand = '';
-    String model = '';
-    String package = ''; // Yeni eklenen paket bilgisi
-    String year = '';
-    String price = '';
-    String damageRecord = '0';
-    String description = '';
+    final Map<String, String> formData = {};
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Yeni Araç Ekle'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Marka',
-                    prefixIcon: Icon(Icons.branding_watermark),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Marka gereklidir';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => brand = value ?? '',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Model',
-                    prefixIcon: Icon(Icons.model_training),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Model gereklidir';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => model = value ?? '',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Paket (Opsiyonel)',
-                    prefixIcon: Icon(Icons.style),
-                    hintText: 'Örn: Premium, Elegance, Urban...',
-                  ),
-                  onSaved: (value) => package = value ?? '',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Yıl',
-                    prefixIcon: Icon(Icons.calendar_today),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Yıl gereklidir';
-                    }
-                    if (int.tryParse(value) == null) {
-                      return 'Geçerli bir yıl giriniz';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => year = value ?? '',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Fiyat (TL)',
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Fiyat gereklidir';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Geçerli bir fiyat giriniz';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => price = value ?? '',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Hasar Kaydı (TL)',
-                    prefixIcon: Icon(Icons.warning_amber),
-                  ),
-                  keyboardType: TextInputType.number,
-                  initialValue: '0',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Hasar kaydı gereklidir';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Geçerli bir değer giriniz';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => damageRecord = value ?? '0',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Açıklama',
-                    prefixIcon: Icon(Icons.description),
-                  ),
-                  maxLines: 3,
-                  onSaved: (value) => description = value ?? '',
-                ),
-              ],
-            ),
-          ),
+        content: CarForm(
+          formKey: formKey,
+          onSave: (values) {
+            formData.addAll(values);
+          },
         ),
         actions: [
           TextButton(
@@ -662,15 +602,26 @@ class _CarListPageState extends State<CarListPage> {
             onPressed: () {
               if (formKey.currentState?.validate() ?? false) {
                 formKey.currentState?.save();
+
                 final newCar = Car(
-                  brand: brand,
-                  model: model,
-                  package: package.isNotEmpty ? package : null,
-                  year: year,
-                  price: price,
+                  brand: formData['brand'] ?? '',
+                  model: formData['model'] ?? '',
+                  package: formData['package']?.isNotEmpty == true
+                      ? formData['package']
+                      : null,
+                  year: formData['year'] ?? '',
+                  price: formData['price'] ?? '',
                   addedDate: DateTime.now(),
-                  damageRecord: damageRecord,
-                  description: description.isNotEmpty ? description : null,
+                  damageRecord: formData['damageRecord'] ?? '0',
+                  description: formData['description']?.isNotEmpty == true
+                      ? formData['description']
+                      : null,
+                  kilometers: formData['kilometers']?.isNotEmpty == true
+                      ? formData['kilometers']
+                      : null,
+                  fuelType: formData['fuelType']?.isNotEmpty == true
+                      ? formData['fuelType']
+                      : null,
                 );
 
                 _saveCar(newCar);
@@ -678,6 +629,78 @@ class _CarListPageState extends State<CarListPage> {
               }
             },
             child: const Text('EKLE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditCarDialog(Car car) {
+    final formKey = GlobalKey<FormState>();
+    final Map<String, String> formData = {};
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Araç Bilgilerini Düzenle'),
+        content: CarForm(
+          car: car, // Mevcut araç bilgilerini form'a geç
+          formKey: formKey,
+          onSave: (values) {
+            formData.addAll(values);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İPTAL'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                formKey.currentState?.save();
+
+                final updatedCar = Car(
+                  id: car.id,
+                  brand: formData['brand'] ?? car.brand,
+                  model: formData['model'] ?? car.model,
+                  package: formData['package']?.isNotEmpty == true
+                      ? formData['package']
+                      : car.package,
+                  year: formData['year'] ?? car.year,
+                  price: formData['price'] ?? car.price,
+                  addedDate: car.addedDate,
+                  isSold: car.isSold,
+                  soldDate: car.soldDate,
+                  damageRecord: formData['damageRecord'] ?? car.damageRecord,
+                  description: formData['description']?.isNotEmpty == true
+                      ? formData['description']
+                      : car.description,
+                  kilometers: formData['kilometers']?.isNotEmpty == true
+                      ? formData['kilometers']
+                      : car.kilometers,
+                  fuelType: formData['fuelType']?.isNotEmpty == true
+                      ? formData['fuelType']
+                      : car.fuelType,
+                  customerName: car.customerName,
+                  customerCity: car.customerCity,
+                  customerPhone: car.customerPhone,
+                  customerTcNo: car.customerTcNo,
+                );
+
+                _saveCar(updatedCar);
+                Navigator.pop(context);
+
+                // Kullanıcıya bilgi ver
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Araç bilgileri güncellendi'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('GÜNCELLE'),
           ),
         ],
       ),
@@ -777,18 +800,33 @@ class _CarListPageState extends State<CarListPage> {
                           if (car.customerTcNo?.isNotEmpty ?? false)
                             _buildDetailItem('TC Kimlik No', car.customerTcNo!),
                         ],
+                        if (car.kilometers != null)
+                          _buildDetailItem('Kilometre', '${car.kilometers} KM'),
+                        if (car.fuelType != null)
+                          _buildDetailItem('Yakıt Tipi', car.fuelType!),
                       ],
                     ),
                   ),
                 ),
                 // Butonlar
                 const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('KAPAT'),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('KAPAT'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showEditCarDialog(car);
+                      },
+                      icon: const Icon(Icons.edit),
+                      label: const Text('DÜZENLE'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -816,6 +854,273 @@ class _CarListPageState extends State<CarListPage> {
           Text(
             value,
             style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Filtreler'),
+                trailing: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedBrand = null;
+                      selectedYear = null;
+                      priceRange = null;
+                      showOnlySoldCars = false;
+                      showOnlyInStock = false;
+                      selectedFuelType = null; // Sıfırla
+                    });
+                  },
+                  child: const Text('Temizle'),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedBrand,
+                      items: _getUniqueBrands(),
+                      onChanged: (value) =>
+                          setState(() => selectedBrand = value),
+                      decoration: const InputDecoration(
+                        labelText: 'Marka',
+                      ),
+                    ),
+                    // Yeni eklenen switch'ler
+                    SwitchListTile(
+                      title: const Text('Sadece Stoktaki Araçlar'),
+                      subtitle: const Text('Satılmamış araçları göster'),
+                      value: showOnlyInStock,
+                      onChanged: (value) {
+                        setState(() {
+                          showOnlyInStock = value;
+                          if (value) {
+                            showOnlySoldCars =
+                                false; // Biri seçildiğinde diğerini kapat
+                          }
+                        });
+                      },
+                    ),
+                    SwitchListTile(
+                      title: const Text('Sadece Satılan Araçlar'),
+                      subtitle: const Text('Satılmış araçları göster'),
+                      value: showOnlySoldCars,
+                      onChanged: (value) {
+                        setState(() {
+                          showOnlySoldCars = value;
+                          if (value) {
+                            showOnlyInStock =
+                                false; // Biri seçildiğinde diğerini kapat
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedFuelType,
+                      items: _getUniqueFuelTypes(),
+                      onChanged: (value) =>
+                          setState(() => selectedFuelType = value),
+                      decoration: const InputDecoration(
+                        labelText: 'Yakıt Tipi',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: FilledButton(
+                  onPressed: () {
+                    _applyFilters();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Filtreleri Uygula'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<DropdownMenuItem<String>> _getUniqueBrands() {
+    final brands = cars.map((car) => car.brand).toSet().toList()..sort();
+    return [
+      const DropdownMenuItem<String>(
+        value: null,
+        child: Text('Tümü'),
+      ),
+      ...brands.map((brand) => DropdownMenuItem<String>(
+            value: brand,
+            child: Text(brand),
+          )),
+    ];
+  }
+
+  List<DropdownMenuItem<String>> _getUniqueFuelTypes() {
+    final fuelTypes = cars
+        .where((car) => car.fuelType != null)
+        .map((car) => car.fuelType!)
+        .toSet()
+        .toList()
+      ..sort();
+
+    return [
+      const DropdownMenuItem<String>(
+        value: null,
+        child: Text('Tümü'),
+      ),
+      ...fuelTypes.map((type) => DropdownMenuItem<String>(
+            value: type,
+            child: Text(type),
+          )),
+    ];
+  }
+
+  void _applyFilters() {
+    setState(() {
+      filteredCars = cars.where((car) {
+        // Marka filtresi
+        if (selectedBrand != null && car.brand != selectedBrand) {
+          return false;
+        }
+
+        // Yakıt tipi filtresi
+        if (selectedFuelType != null && car.fuelType != selectedFuelType) {
+          return false;
+        }
+
+        // Stok durumu filtreleri
+        if (showOnlyInStock && car.isSold) {
+          return false;
+        }
+        if (showOnlySoldCars && !car.isSold) {
+          return false;
+        }
+
+        // Fiyat aralığı filtresi
+        if (priceRange != null) {
+          final carPrice = double.tryParse(car.price.replaceAll(',', '')) ?? 0;
+          if (carPrice < priceRange!.start || carPrice > priceRange!.end) {
+            return false;
+          }
+        }
+
+        return true;
+      }).toList();
+    });
+  }
+
+  void _showCustomerDetails(Car car) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Müşteri Bilgileri'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailItem('Müşteri', car.customerName ?? 'Belirtilmemiş'),
+            _buildDetailItem('Şehir', car.customerCity ?? 'Belirtilmemiş'),
+            _buildDetailItem('Telefon', car.customerPhone ?? 'Belirtilmemiş'),
+            _buildDetailItem(
+                'TC Kimlik No', car.customerTcNo ?? 'Belirtilmemiş'),
+            _buildDetailItem('Satış Tarihi', dateFormat.format(car.soldDate!)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('KAPAT'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _showUpdateCustomerDialog(car);
+            },
+            icon: const Icon(Icons.edit),
+            label: const Text('BİLGİLERİ GÜNCELLE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUpdateCustomerDialog(Car car) {
+    final formKey = GlobalKey<FormState>();
+    final Map<String, String> formData = {};
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Müşteri Bilgilerini Güncelle'),
+        content: CarForm(
+          car: car,
+          formKey: formKey,
+          isCustomerForm: true,
+          onSave: (values) {
+            formData.addAll(values);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İPTAL'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                formKey.currentState?.save();
+
+                final updatedCar = Car(
+                  id: car.id,
+                  brand: car.brand,
+                  model: car.model,
+                  package: car.package,
+                  year: car.year,
+                  price: car.price,
+                  addedDate: car.addedDate,
+                  isSold: car.isSold,
+                  soldDate: car.soldDate,
+                  damageRecord: car.damageRecord,
+                  description: car.description,
+                  kilometers: car.kilometers,
+                  fuelType: car.fuelType,
+                  customerName: formData['customerName'],
+                  customerCity: formData['customerCity'],
+                  customerPhone: formData['customerPhone'],
+                  customerTcNo: formData['customerTcNo'],
+                );
+
+                _saveCar(updatedCar);
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Müşteri bilgileri güncellendi'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('GÜNCELLE'),
           ),
         ],
       ),

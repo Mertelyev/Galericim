@@ -18,7 +18,6 @@ class AppTheme {
         secondary: secondaryGrey,
         onSecondary: Colors.white,
         surface: Colors.white,
-        background: backgroundLight,
         primaryContainer: const Color(0xFFE6E9F0), // Açık lacivert tonu
         onPrimaryContainer: primaryNavy,
         secondaryContainer: Colors.grey[200]!,
@@ -38,21 +37,21 @@ class AppTheme {
         shadowColor: Colors.black.withOpacity(0.15),
         surfaceTintColor: Colors.white,
         indicatorColor: primaryNavy.withOpacity(0.15),
-        iconTheme: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: primaryNavy);
           }
-          return IconThemeData(color: secondaryGrey);
+          return const IconThemeData(color: secondaryGrey);
         }),
-        labelTextStyle: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return const TextStyle(
               color: primaryNavy,
               fontWeight: FontWeight.w600,
               fontSize: 13,
             );
           }
-          return TextStyle(
+          return const TextStyle(
             color: secondaryGrey,
             fontWeight: FontWeight.normal,
             fontSize: 13,
@@ -101,7 +100,6 @@ class AppTheme {
         secondary: Colors.grey[400]!,
         onSecondary: Colors.white,
         surface: const Color(0xFF1A1B1E),
-        background: backgroundDark,
         primaryContainer: const Color(0xFF2A3B6E), // Orta lacivert
         onPrimaryContainer: Colors.white,
         secondaryContainer: const Color(0xFF2A2B2F),
@@ -121,14 +119,14 @@ class AppTheme {
         shadowColor: Colors.black.withOpacity(0.3),
         surfaceTintColor: const Color(0xFF1A1B1E),
         indicatorColor: const Color(0xFF3B4B80).withOpacity(0.2),
-        iconTheme: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: Colors.white);
           }
           return IconThemeData(color: Colors.grey[400]);
         }),
-        labelTextStyle: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w600,

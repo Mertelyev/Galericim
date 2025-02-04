@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'db_helper.dart';
-import 'car.dart';
 
 class TrendsPage extends StatelessWidget {
   const TrendsPage({super.key});

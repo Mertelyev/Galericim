@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class DBHelper {
-  static const int _latestVersion = 5; // Version increased
+  static const int _latestVersion = 6; // Version increased
   static const String _tableName = 'cars';
 
   // Veritabanı şema değişikliklerini takip eden map
@@ -32,6 +32,13 @@ class DBHelper {
       '''ALTER TABLE cars ADD COLUMN customerCity TEXT''',
       '''ALTER TABLE cars ADD COLUMN customerPhone TEXT''',
       '''ALTER TABLE cars ADD COLUMN customerTcNo TEXT''',
+    ],
+    6: [
+      '''ALTER TABLE cars ADD COLUMN kilometers TEXT''',
+      '''ALTER TABLE cars ADD COLUMN fuelType TEXT''',
+      '''ALTER TABLE cars ADD COLUMN transmission TEXT''',
+      '''ALTER TABLE cars ADD COLUMN color TEXT''',
+      '''ALTER TABLE cars ADD COLUMN lastModifiedDate TEXT'''
     ],
   };
 

@@ -14,6 +14,11 @@ class Car {
   final String? customerCity;
   final String? customerPhone;
   final String? customerTcNo;
+  final String? kilometers;
+  final String? fuelType;
+  final String? transmission;
+  final String? color;
+  final DateTime lastModifiedDate;
 
   Car({
     this.id,
@@ -31,7 +36,12 @@ class Car {
     this.customerCity,
     this.customerPhone,
     this.customerTcNo,
-  });
+    this.kilometers,
+    this.fuelType,
+    this.transmission,
+    this.color,
+    DateTime? lastModifiedDate,
+  }) : lastModifiedDate = lastModifiedDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
@@ -50,6 +60,11 @@ class Car {
       'customerCity': customerCity,
       'customerPhone': customerPhone,
       'customerTcNo': customerTcNo,
+      'kilometers': kilometers,
+      'fuelType': fuelType,
+      'transmission': transmission,
+      'color': color,
+      'lastModifiedDate': lastModifiedDate.toIso8601String(),
     };
   }
 
@@ -71,6 +86,13 @@ class Car {
       customerCity: map['customerCity'],
       customerPhone: map['customerPhone'],
       customerTcNo: map['customerTcNo'],
+      kilometers: map['kilometers'],
+      fuelType: map['fuelType'],
+      transmission: map['transmission'],
+      color: map['color'],
+      lastModifiedDate: map['lastModifiedDate'] != null
+          ? DateTime.parse(map['lastModifiedDate'])
+          : null,
     );
   }
 
