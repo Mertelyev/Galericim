@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../car.dart';
+import 'package:intl/intl.dart';
 
 class CarForm extends StatefulWidget {
   final Car? car;
@@ -21,6 +22,97 @@ class CarForm extends StatefulWidget {
 
 class _CarFormState extends State<CarForm> {
   final Map<String, String> _formData = {};
+
+  Future<DateTime?> _showDatePicker(
+      BuildContext context, DateTime? initialDate) async {
+    return showDatePicker(
+      context: context,
+      initialDate: initialDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      locale: const Locale('tr', 'TR'), // Türkçe dil desteği
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            dialogBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required String fieldKey,
+    required IconData icon,
+    DateTime? initialValue,
+    bool allowFutureDate = false,
+    String? Function(String?)? validator,
+  }) {
+    final dateStr = initialValue != null
+        ? DateFormat('dd.MM.yyyy').format(initialValue)
+        : null;
+
+    return TextFormField(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        hintText: 'GG.AA.YYYY',
+      ),
+      initialValue: dateStr,
+      keyboardType: TextInputType.datetime,
+      validator: (value) {
+        if (validator != null) {
+          final validatorResult = validator(value);
+          if (validatorResult != null) return validatorResult;
+        }
+
+        if (value != null && value.isNotEmpty) {
+          try {
+            final parts = value.split('.');
+            if (parts.length != 3) return 'GG.AA.YYYY formatında giriniz';
+
+            final day = int.tryParse(parts[0]);
+            final month = int.tryParse(parts[1]);
+            final year = int.tryParse(parts[2]);
+
+            if (day == null || month == null || year == null) {
+              return 'Geçerli bir tarih giriniz';
+            }
+
+            final date = DateTime(year, month, day);
+
+            if (date.isAfter(DateTime.now()) && !allowFutureDate) {
+              return 'Gelecek tarih girilemez';
+            }
+
+            if (year < 2000 || year > DateTime.now().year) {
+              return '2000-${DateTime.now().year} arası bir yıl giriniz';
+            }
+          } catch (e) {
+            return 'Geçerli bir tarih giriniz';
+          }
+        }
+        return null;
+      },
+      onSaved: (value) {
+        if (value != null && value.isNotEmpty) {
+          try {
+            final parts = value.split('.');
+            final day = int.parse(parts[0]);
+            final month = int.parse(parts[1]);
+            final year = int.parse(parts[2]);
+            final date = DateTime(year, month, day);
+            _formData[fieldKey] = date.toIso8601String();
+          } catch (e) {
+            debugPrint('Tarih dönüştürme hatası: $e');
+          }
+        }
+        widget.onSave(_formData);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +247,28 @@ class _CarFormState extends State<CarForm> {
                 initialValue: widget.car?.description,
                 maxLines: 3,
               ),
+              const SizedBox(height: 16),
+              _buildDateField(
+                label: 'Eklenme Tarihi',
+                fieldKey: 'addedDate',
+                icon: Icons.date_range,
+                initialValue: widget.car?.addedDate,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Eklenme tarihi gereklidir';
+                  }
+                  return null;
+                },
+              ),
+              if (widget.car?.isSold ?? false) ...[
+                const SizedBox(height: 16),
+                _buildDateField(
+                  label: 'Satış Tarihi',
+                  fieldKey: 'soldDate',
+                  icon: Icons.sell,
+                  initialValue: widget.car?.soldDate,
+                ),
+              ],
             ] else ...[
               _buildTextField(
                 label: 'Müşteri Adı',

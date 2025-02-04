@@ -213,6 +213,180 @@ class _StatisticPageState extends State<StatisticPage> {
     _loadStatistics();
   }
 
+  Widget _buildStatisticCard(
+      BuildContext context, String title, dynamic content) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            if (title == 'Araç İstatistikleri') ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Toplam',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          totalCars.toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Stokta',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          (totalCars - soldCars).toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Satılan',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          soldCars.toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (content is List<Map<String, dynamic>>) ...[
+              // Marka dağılımı için yeni düzen
+              ...content.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                item['name'],
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ),
+                            Expanded(
+                              flex: 5,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: item['percentage'] / 100,
+                                  minHeight: 8,
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 90,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${item['count']} adet',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '(${item['percentage']}%)',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _calculatePercentages(
+      Map<String, int> distribution) {
+    if (distribution.isEmpty) {
+      return [
+        {'name': 'Veri yok', 'percentage': 100, 'count': 0},
+      ];
+    }
+
+    final total = distribution.values.reduce((a, b) => a + b);
+    return distribution.entries.map((entry) {
+      final percentage = (entry.value / total * 100).round();
+      return {
+        'name': entry.key,
+        'percentage': percentage,
+        'count': entry.value,
+      };
+    }).toList()
+      ..sort(
+          (a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -235,14 +409,8 @@ class _StatisticPageState extends State<StatisticPage> {
                     children: [
                       _buildStatisticCard(
                         context,
-                        'Toplam Araç Sayısı',
-                        totalCars.toString(),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildStatisticCard(
-                        context,
-                        'Satılan Araç Sayısı',
-                        soldCars.toString(),
+                        'Araç İstatistikleri',
+                        null, // Artık content parametresini kullanmıyoruz
                       ),
                       const SizedBox(height: 16),
                       _buildStatisticCard(
@@ -253,90 +421,6 @@ class _StatisticPageState extends State<StatisticPage> {
                     ],
                   ),
                 ),
-    );
-  }
-
-  List<Map<String, dynamic>> _calculatePercentages(
-      Map<String, int> distribution) {
-    if (distribution.isEmpty) {
-      return [
-        {'name': 'Veri yok', 'percentage': 100},
-      ];
-    }
-
-    final total = distribution.values.reduce((a, b) => a + b);
-    return distribution.entries.map((entry) {
-      final percentage = (entry.value / total * 100).round();
-      return {
-        'name': entry.key,
-        'percentage': percentage,
-      };
-    }).toList()
-      ..sort(
-          (a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
-  }
-
-  Widget _buildStatisticCard(
-      BuildContext context, String title, dynamic content) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            if (content is String)
-              Text(
-                content,
-                style: Theme.of(context).textTheme.headlineMedium,
-              )
-            else if (content is List<Map<String, dynamic>>)
-              ...content.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                item['name'],
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                            ),
-                            Expanded(
-                              flex: 7,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: item['percentage'] / 100,
-                                  minHeight: 8,
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 50,
-                              child: Text(
-                                '${item['percentage']}%',
-                                textAlign: TextAlign.end,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )),
-          ],
-        ),
-      ),
     );
   }
 }

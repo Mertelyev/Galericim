@@ -27,6 +27,43 @@ class _CarListPageState extends State<CarListPage> {
   bool showOnlySoldCars = false;
   bool showOnlyInStock = false; // Yeni eklenen değişken
   String? selectedFuelType; // Yeni değişken ekle
+  DateTime? selectedStartDate;
+  DateTime? selectedEndDate;
+  String? selectedMonth;
+  String? selectedFilterYear;
+
+  List<String> get _months => [
+        'Ocak',
+        'Şubat',
+        'Mart',
+        'Nisan',
+        'Mayıs',
+        'Haziran',
+        'Temmuz',
+        'Ağustos',
+        'Eylül',
+        'Ekim',
+        'Kasım',
+        'Aralık'
+      ];
+
+  List<String> get _years {
+    final years = <String>[];
+    final currentYear = DateTime.now().year;
+    for (int year = currentYear; year >= 2000; year--) {
+      years.add(year.toString());
+    }
+    return years;
+  }
+
+  List<String> get _getYears {
+    final Set<String> years = {};
+    final currentYear = DateTime.now().year;
+    for (int year = currentYear; year >= 2000; year--) {
+      years.add(year.toString());
+    }
+    return years.toList();
+  }
 
   @override
   void initState() {
@@ -644,7 +681,7 @@ class _CarListPageState extends State<CarListPage> {
       builder: (context) => AlertDialog(
         title: const Text('Araç Bilgilerini Düzenle'),
         content: CarForm(
-          car: car, // Mevcut araç bilgilerini form'a geç
+          car: car,
           formKey: formKey,
           onSave: (values) {
             formData.addAll(values);
@@ -669,9 +706,13 @@ class _CarListPageState extends State<CarListPage> {
                       : car.package,
                   year: formData['year'] ?? car.year,
                   price: formData['price'] ?? car.price,
-                  addedDate: car.addedDate,
+                  addedDate: formData['addedDate'] != null
+                      ? DateTime.parse(formData['addedDate']!)
+                      : car.addedDate,
                   isSold: car.isSold,
-                  soldDate: car.soldDate,
+                  soldDate: formData['soldDate'] != null
+                      ? DateTime.parse(formData['soldDate']!)
+                      : car.soldDate,
                   damageRecord: formData['damageRecord'] ?? car.damageRecord,
                   description: formData['description']?.isNotEmpty == true
                       ? formData['description']
@@ -691,7 +732,6 @@ class _CarListPageState extends State<CarListPage> {
                 _saveCar(updatedCar);
                 Navigator.pop(context);
 
-                // Kullanıcıya bilgi ver
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Araç bilgileri güncellendi'),
@@ -865,9 +905,9 @@ class _CarListPageState extends State<CarListPage> {
       context: context,
       isScrollControlled: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Padding(
+        builder: (context, setState) => SingleChildScrollView(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -882,7 +922,11 @@ class _CarListPageState extends State<CarListPage> {
                       priceRange = null;
                       showOnlySoldCars = false;
                       showOnlyInStock = false;
-                      selectedFuelType = null; // Sıfırla
+                      selectedFuelType = null;
+                      selectedStartDate = null;
+                      selectedEndDate = null;
+                      selectedMonth = null;
+                      selectedFilterYear = null;
                     });
                   },
                   child: const Text('Temizle'),
@@ -940,6 +984,69 @@ class _CarListPageState extends State<CarListPage> {
                         labelText: 'Yakıt Tipi',
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tarih Filtresi',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedMonth,
+                                  items: [
+                                    const DropdownMenuItem(
+                                      value: null,
+                                      child: Text('Tüm Aylar'),
+                                    ),
+                                    ..._months.asMap().entries.map((entry) {
+                                      return DropdownMenuItem(
+                                        value: (entry.key + 1).toString(),
+                                        child: Text(entry.value),
+                                      );
+                                    }),
+                                  ],
+                                  onChanged: (value) =>
+                                      setState(() => selectedMonth = value),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Ay',
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedFilterYear,
+                                  items: [
+                                    const DropdownMenuItem(
+                                      value: null,
+                                      child: Text('Tüm Yıllar'),
+                                    ),
+                                    ..._years.map((year) => DropdownMenuItem(
+                                          value: year,
+                                          child: Text(year),
+                                        )),
+                                  ],
+                                  onChanged: (value) => setState(
+                                      () => selectedFilterYear = value),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Yıl',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(),
                   ],
                 ),
               ),
@@ -1019,6 +1126,21 @@ class _CarListPageState extends State<CarListPage> {
         if (priceRange != null) {
           final carPrice = double.tryParse(car.price.replaceAll(',', '')) ?? 0;
           if (carPrice < priceRange!.start || carPrice > priceRange!.end) {
+            return false;
+          }
+        }
+
+        // Ay ve yıl filtresi
+        if (selectedMonth != null || selectedFilterYear != null) {
+          final carDate = car.isSold ? car.soldDate! : car.addedDate;
+
+          if (selectedMonth != null &&
+              carDate.month.toString() != selectedMonth) {
+            return false;
+          }
+
+          if (selectedFilterYear != null &&
+              carDate.year.toString() != selectedFilterYear) {
             return false;
           }
         }
