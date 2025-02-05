@@ -305,8 +305,6 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   Widget _buildCarTile(Car car) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
@@ -456,7 +454,7 @@ class _CarListPageState extends State<CarListPage> {
                       decoration: BoxDecoration(
                         color: Theme.of(context)
                             .colorScheme
-                            .surfaceVariant
+                            .surfaceContainerHighest
                             .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -561,37 +559,6 @@ class _CarListPageState extends State<CarListPage> {
     );
   }
 
-  Widget _buildFeatureItemWithIcon(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVerticalDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Container(
-        height: 16,
-        width: 1,
-        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
-      ),
-    );
-  }
-
   void _showToggleSoldDialog(Car car) {
     final formKey = GlobalKey<FormState>();
     final Map<String, String> formData = {};
@@ -629,7 +596,7 @@ class _CarListPageState extends State<CarListPage> {
             child: const Text('İPTAL'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               formKey.currentState?.save();
               final updatedCar = car.isSold
                   ? Car(
@@ -662,7 +629,8 @@ class _CarListPageState extends State<CarListPage> {
                       customerPhone: formData['customerPhone'],
                       customerTcNo: formData['customerTcNo'],
                     );
-              _saveCar(updatedCar);
+              await _saveCar(updatedCar);
+              if (!mounted) return;
               Navigator.pop(context);
             },
             child: Text((car.isSold ? 'GERİ AL' : 'SATILDI').toUpperCase()),
@@ -751,10 +719,10 @@ class _CarListPageState extends State<CarListPage> {
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (formKey.currentState?.validate() ?? false) {
                           formKey.currentState?.save();
-                          _saveCar(Car(
+                          await _saveCar(Car(
                             brand: formData['brand'] ?? '',
                             model: formData['model'] ?? '',
                             package: formData['package']?.isNotEmpty == true
@@ -778,6 +746,7 @@ class _CarListPageState extends State<CarListPage> {
                                 ? formData['fuelType']
                                 : null,
                           ));
+                          if (!mounted) return;
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -929,7 +898,7 @@ class _CarListPageState extends State<CarListPage> {
                         ),
                         const SizedBox(width: 8),
                         FilledButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (formKey.currentState?.validate() ?? false) {
                               formKey.currentState?.save();
                               final updatedCar = Car(
@@ -963,7 +932,8 @@ class _CarListPageState extends State<CarListPage> {
                                 customerPhone: car.customerPhone,
                                 customerTcNo: car.customerTcNo,
                               );
-                              _saveCar(updatedCar);
+                              await _saveCar(updatedCar);
+                              if (!mounted) return;
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1144,7 +1114,7 @@ class _CarListPageState extends State<CarListPage> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context)
                                     .colorScheme
-                                    .surfaceVariant
+                                    .surfaceContainerHighest
                                     .withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -1286,8 +1256,6 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   void _showFilterDialog() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1606,34 +1574,6 @@ class _CarListPageState extends State<CarListPage> {
     });
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.secondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showCustomerDetails(Car car) {
     showDialog(
       context: context,
@@ -1843,8 +1783,10 @@ class _CarListPageState extends State<CarListPage> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color:
-                Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -1904,7 +1846,7 @@ class _CarListPageState extends State<CarListPage> {
             child: const Text('İPTAL'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               if (formKey.currentState?.validate() ?? false) {
                 formKey.currentState?.save();
 
@@ -1928,7 +1870,8 @@ class _CarListPageState extends State<CarListPage> {
                   customerTcNo: formData['customerTcNo'],
                 );
 
-                _saveCar(updatedCar);
+                await _saveCar(updatedCar);
+                if (!mounted) return;
                 Navigator.pop(context);
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1949,24 +1892,26 @@ class _CarListPageState extends State<CarListPage> {
   void _showDeleteConfirmation(Car car) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Aracı Sil'),
         content: Text(
             '${car.brand} ${car.model} aracını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('VAZGEÇ'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
             ),
             onPressed: () async {
+              // Close dialog first
+              Navigator.pop(dialogContext);
+              // Then handle deletion
               if (car.id != null) {
                 await _deleteCar(car.id!);
                 if (mounted) {
-                  Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Araç başarıyla silindi'),
