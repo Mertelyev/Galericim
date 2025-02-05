@@ -1,165 +1,6 @@
 import 'package:flutter/material.dart';
 import 'db_helper.dart';
 
-class CarTrendsPage extends StatefulWidget {
-  const CarTrendsPage({super.key});
-
-  @override
-  State<CarTrendsPage> createState() => _CarTrendsPageState();
-}
-
-class _CarTrendsPageState extends State<CarTrendsPage> {
-  final dbHelper = DBHelper();
-  Map<String, int> brandDistribution = {};
-  Map<String, int> soldBrandDistribution = {};
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTrends();
-  }
-
-  Future<void> _loadTrends() async {
-    try {
-      final cars = await dbHelper.getCars();
-
-      // Marka dağılımını hesapla
-      final Map<String, int> brandCounts = {};
-      final Map<String, int> soldBrandCounts = {};
-
-      for (var car in cars) {
-        // Toplam marka dağılımı
-        brandCounts[car.brand] = (brandCounts[car.brand] ?? 0) + 1;
-
-        // Satılan araçların marka dağılımı
-        if (car.isSold) {
-          soldBrandCounts[car.brand] = (soldBrandCounts[car.brand] ?? 0) + 1;
-        }
-      }
-
-      setState(() {
-        brandDistribution = brandCounts;
-        soldBrandDistribution = soldBrandCounts;
-        isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('Trendler yüklenirken hata: $e');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Otomobil Trendleri'),
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadTrends,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildTrendCard(
-                    context,
-                    'Marka Dağılımı',
-                    _calculatePercentages(brandDistribution),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTrendCard(
-                    context,
-                    'Satılan Araçların Marka Dağılımı',
-                    _calculatePercentages(soldBrandDistribution),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  List<Map<String, dynamic>> _calculatePercentages(
-      Map<String, int> distribution) {
-    if (distribution.isEmpty) {
-      return [
-        {'name': 'Veri yok', 'percentage': 100},
-      ];
-    }
-
-    final total = distribution.values.reduce((a, b) => a + b);
-    return distribution.entries.map((entry) {
-      final percentage = (entry.value / total * 100).round();
-      return {
-        'name': entry.key,
-        'percentage': percentage,
-      };
-    }).toList()
-      ..sort(
-          (a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
-  }
-
-  Widget _buildTrendCard(
-      BuildContext context, String title, List<Map<String, dynamic>> items) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            ...items.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              item['name'],
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 7,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: item['percentage'] / 100,
-                                minHeight: 8,
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 50,
-                            child: Text(
-                              '${item['percentage']}%',
-                              textAlign: TextAlign.end,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
 
@@ -185,185 +26,25 @@ class _StatisticPageState extends State<StatisticPage> {
       final cars = await dbHelper.getCars();
 
       // Toplam ve satılan araç sayısını hesapla
-      totalCars = cars.length;
-      soldCars = cars.where((car) => car.isSold).length;
-
-      // Satılan araçların marka dağılımını hesapla
-      final Map<String, int> soldBrandCounts = {};
-      for (var car in cars) {
-        if (car.isSold) {
-          soldBrandCounts[car.brand] = (soldBrandCounts[car.brand] ?? 0) + 1;
-        }
-      }
-
       setState(() {
-        soldBrandDistribution = soldBrandCounts;
+        totalCars = cars.length;
+        soldCars = cars.where((car) => car.isSold).length;
+
+        // Satılan araçların marka dağılımını hesapla
+        for (var car in cars) {
+          if (car.isSold) {
+            soldBrandDistribution[car.brand] =
+                (soldBrandDistribution[car.brand] ?? 0) + 1;
+          }
+        }
         isLoading = false;
       });
     } catch (e) {
+      debugPrint('İstatistikler yüklenirken hata: $e');
       setState(() {
         isLoading = false;
       });
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadStatistics();
-  }
-
-  Widget _buildStatisticCard(
-      BuildContext context, String title, dynamic content) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            if (title == 'Araç İstatistikleri') ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Toplam',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          totalCars.toString(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: Theme.of(context).dividerColor,
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Stokta',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          (totalCars - soldCars).toString(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: Theme.of(context).dividerColor,
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Satılan',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          soldCars.toString(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ] else if (content is List<Map<String, dynamic>>) ...[
-              // Marka dağılımı için yeni düzen
-              ...content.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                item['name'],
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                            ),
-                            Expanded(
-                              flex: 5,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: item['percentage'] / 100,
-                                  minHeight: 8,
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 90,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${item['count']} adet',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '(${item['percentage']}%)',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 
   List<Map<String, dynamic>> _calculatePercentages(
@@ -387,40 +68,401 @@ class _StatisticPageState extends State<StatisticPage> {
           (a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
   }
 
+  Widget _buildSummaryCard(
+    String title,
+    int count,
+    IconData icon,
+    Color color, {
+    String? subtitle,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 12),
+            Text(
+              count.toString(),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 24,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(),
+            ),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Araç İstatistikleri'),
+        title: const Text('İstatistikler'),
+        elevation: 0,
+        scrolledUnderElevation: 3,
+        actions: [
+          IconButton.outlined(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadStatistics,
+            tooltip: 'Yenile',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : totalCars == 0
-              ? Center(
-                  child: Text(
-                    'Henüz araç eklenmedi',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadStatistics,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildStatisticCard(
-                        context,
-                        'Araç İstatistikleri',
-                        null, // Artık content parametresini kullanmıyoruz
+          : RefreshIndicator(
+              onRefresh: _loadStatistics,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // İstatistik kartları - Tek satırda
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withOpacity(0.2),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildStatisticCard(
-                        context,
-                        'Satılan Araçların Marka Dağılımı',
-                        _calculatePercentages(soldBrandDistribution),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            children: [
+                              // Toplam Araç
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.directions_car,
+                                      size: 24,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      totalCars.toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      'Toplam',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              VerticalDivider(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant,
+                              ),
+                              // Stokta
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.inventory_2,
+                                      size: 24,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      (totalCars - soldCars).toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      'Stokta',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                    if (totalCars > 0)
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          '%${(((totalCars - soldCars) / totalCars) * 100).round()}',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSecondaryContainer,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              VerticalDivider(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant,
+                              ),
+                              // Satılan
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.sell,
+                                      size: 24,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .tertiary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      soldCars.toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      'Satılan',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                    if (totalCars > 0)
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .tertiaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          '%${((soldCars / totalCars) * 100).round()}',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onTertiaryContainer,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Marka Dağılımı
+                    if (soldBrandDistribution.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        'Satış Dağılımı',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDetailCard(
+                        title: 'Markalar',
+                        icon: Icons.pie_chart,
+                        children: _calculatePercentages(soldBrandDistribution)
+                            .map((item) => _buildDistributionRow(
+                                  item['name'] as String,
+                                  item['percentage'] as int,
+                                  item['count'] as int,
+                                ))
+                            .toList(),
                       ),
                     ],
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildDistributionRow(String name, int percentage, int count) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(
+                  name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Text(
+                '$count araç',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '%$percentage',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 8,
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

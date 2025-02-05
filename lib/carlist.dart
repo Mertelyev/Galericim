@@ -56,15 +56,6 @@ class _CarListPageState extends State<CarListPage> {
     return years;
   }
 
-  List<String> get _getYears {
-    final Set<String> years = {};
-    final currentYear = DateTime.now().year;
-    for (int year = currentYear; year >= 2000; year--) {
-      years.add(year.toString());
-    }
-    return years.toList();
-  }
-
   @override
   void initState() {
     super.initState();
@@ -220,9 +211,13 @@ class _CarListPageState extends State<CarListPage> {
                     : const TextStyle(color: Colors.black),
                 onChanged: _filterCars,
               ),
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.5),
+        surfaceTintColor: Theme.of(context).colorScheme.surface,
         actions: [
           if (isSearching)
-            IconButton(
+            IconButton.outlined(
               icon: const Icon(Icons.close),
               onPressed: () {
                 setState(() {
@@ -232,10 +227,11 @@ class _CarListPageState extends State<CarListPage> {
                 });
               },
             ),
-          IconButton(
+          IconButton.outlined(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: isLoading
@@ -271,36 +267,40 @@ class _CarListPageState extends State<CarListPage> {
                       },
                     ),
             ),
-      // Replace existing FAB(s) with a Stack of two Positioned FABs
-      floatingActionButton: Stack(
-        children: [
-          // Search FAB - bottom left; position adjusted for better spacing
-          Positioned(
-            bottom: 2, // Azaltılmış alt boşluk
-            left: 24, // Artırılmış sol boşluk
-            child: FloatingActionButton(
-              heroTag: 'searchFAB',
-              onPressed: () {
-                setState(() {
-                  isSearching = true;
-                });
-              },
-              child: const Icon(Icons.search),
+      // Floating Action Buttons için daha modern bir yerleşim
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: FloatingActionButton(
+                heroTag: 'searchFAB',
+                onPressed: () {
+                  setState(() {
+                    isSearching = true;
+                  });
+                },
+                elevation: 4,
+                child: const Icon(Icons.search),
+              ),
             ),
-          ),
-          // "Araç Ekle" FAB - bottom right; position adjusted accordingly
-          Positioned(
-            bottom: 2,
-            right: 0,
-            child: FloatingActionButton.extended(
-              heroTag: 'addFAB',
-              onPressed: () => _showAddCarDialog(),
-              label: const Text('Araç Ekle'),
-              icon: const Icon(Icons.add),
+            Padding(
+              // Sağ tarafa padding eklendi
+              padding: const EdgeInsets.only(right: 12),
+              child: FloatingActionButton.extended(
+                heroTag: 'addFAB',
+                onPressed: () => _showAddCarDialog(),
+                elevation: 4,
+                icon: const Icon(Icons.add),
+                label: const Text('Araç Ekle'),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -308,230 +308,286 @@ class _CarListPageState extends State<CarListPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
-        // Add this
-        onTap: () => _showCarDetails(car), // Add this
-        child: Stack(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: CircleAvatar(
-                backgroundColor: car.isSold
-                    ? Theme.of(context).colorScheme.secondary
-                    : Theme.of(context).colorScheme.primaryContainer,
-                child: Icon(
-                  Icons.directions_car,
-                  color: car.isSold
-                      ? Theme.of(context).colorScheme.onSecondary
-                      : Theme.of(context).colorScheme.onPrimaryContainer,
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showCarDetails(car),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header kısmı
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
                 ),
-              ),
-              title: Row(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start, // Added for top alignment
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 4, // Horizontal spacing between items
-                      children: [
-                        Text(
-                          car.brand,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        const Text('-'),
-                        Text(
-                          car.model,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                        ),
-                        if (car.package != null && car.package!.isNotEmpty) ...[
-                          const Text('-'),
-                          Text(
-                            car.package!,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontStyle: FontStyle.italic,
-                                  color:
-                                      Theme.of(context).colorScheme.secondary,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  // Model yılı, kilometre ve yakıt bilgisi aynı satırda
-                  Row(
-                    children: [
-                      Text(
-                        car.year,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: isDark ? Colors.white70 : null,
-                            ),
+                child: Row(
+                  children: [
+                    // Araç ikonu
+                    CircleAvatar(
+                      backgroundColor: car.isSold
+                          ? Theme.of(context).colorScheme.secondary
+                          : Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.directions_car,
+                        color: car.isSold
+                            ? Theme.of(context).colorScheme.onSecondary
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
-                      if (car.kilometers != null) ...[
-                        Text(
-                          ' • ${car.kilometers} KM',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: isDark ? Colors.white70 : null,
-                                  ),
-                        ),
-                      ],
-                      if (car.fuelType != null) ...[
-                        Text(
-                          ' • ${car.fuelType}',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: isDark ? Colors.white70 : null,
-                                  ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    '${car.price} TL',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (car.damageRecord != '0')
-                    Text(
-                      'Hasar Kaydı: ${car.damageRecord} TL',
-                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Eklenme: ${dateFormat.format(car.addedDate)}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (car.isSold && car.soldDate != null)
-                    Text(
-                      'Satış: ${dateFormat.format(car.soldDate!)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                    ),
-                  // Açıklama bölümü
-                  if (car.description != null &&
-                      car.description!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest
-                            .withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    const SizedBox(width: 16),
+                    // Araç başlık bilgileri - Model yazısını normal weight yap
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Açıklama:',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 4,
+                                  children: [
+                                    Text(
+                                      car.brand,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
+                                    const Text('-'),
+                                    Text(
+                                      car.model,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (car.isSold)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondary
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        size: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'SATILDI',
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            car.description!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
+                          if (car.package != null && car.package!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                car.package!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                    ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
                   ],
-                ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (car.isSold)
-                    Flexible(
-                      child: IconButton(
-                        icon: const Icon(Icons.person),
-                        tooltip: 'Müşteri Bilgileri',
-                        onPressed: () => _showCustomerDetails(car),
-                      ),
-                    ),
-                  Flexible(
-                    child: IconButton(
-                      icon: const Icon(Icons.edit),
-                      tooltip: 'Düzenle',
-                      onPressed: () => _showEditCarDialog(car),
-                    ),
-                  ),
-                  Flexible(
-                    child: IconButton(
-                      icon: car.isSold
-                          ? const Icon(Icons.undo)
-                          : const Icon(Icons.check_circle_outline),
-                      tooltip: car.isSold
-                          ? 'Satış durumunu geri al'
-                          : 'Satıldı olarak işaretle',
-                      onPressed: () => _showToggleSoldDialog(car),
-                    ),
-                  ),
-                  Flexible(
-                    child: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () {
-                        setState(() {
-                          _deleteCar(car.id!);
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (car.isSold)
-              Positioned(
-                top: 18,
-                right: 18,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .secondary
-                        .withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'SATILDI',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
                 ),
               ),
-          ],
+              // Content kısmı
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Özellikler satırı - Row yerine Wrap kullanıyoruz
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 2, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceVariant
+                            .withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Wrap(
+                        spacing: 8, // Öğeler arası yatay boşluk
+                        runSpacing: 8, // Satırlar arası dikey boşluk
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          _buildFeatureItem(
+                            Icons.calendar_today_outlined,
+                            car.year,
+                          ),
+                          if (car.kilometers != null) ...[
+                            _buildFeatureItemWithDivider(
+                              Icons.speed_outlined,
+                              '${car.kilometers} KM',
+                            ),
+                          ],
+                          if (car.fuelType != null) ...[
+                            _buildFeatureItemWithDivider(
+                              Icons.local_gas_station_outlined,
+                              car.fuelType!,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${car.price} TL',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                ),
+                                if (car.damageRecord != '0')
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 8), // Üst boşluğu azalt
+                                    child: Text(
+                                      'Hasar: ${car.damageRecord} TL',
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(context).colorScheme.error,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          // İşlem butonları
+                          _buildActionButtons(car),
+                        ],
+                      ),
+                    ),
+                    // Tarih bilgileri
+                    const SizedBox(height: 8),
+                    DefaultTextStyle(
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text('Eklenme: ${dateFormat.format(car.addedDate)}'),
+                          if (car.isSold && car.soldDate != null) ...[
+                            const SizedBox(width: 16),
+                            const Icon(
+                              Icons.sell_outlined,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text('Satış: ${dateFormat.format(car.soldDate!)}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureItemWithIcon(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Container(
+        height: 16,
+        width: 1,
+        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
       ),
     );
   }
@@ -622,52 +678,123 @@ class _CarListPageState extends State<CarListPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yeni Araç Ekle'),
-        content: CarForm(
-          formKey: formKey,
-          onSave: (values) {
-            formData.addAll(values);
-          },
+      builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+            minHeight: MediaQuery.of(context).size.height * 0.5,
           ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                formKey.currentState?.save();
-
-                final newCar = Car(
-                  brand: formData['brand'] ?? '',
-                  model: formData['model'] ?? '',
-                  package: formData['package']?.isNotEmpty == true
-                      ? formData['package']
-                      : null,
-                  year: formData['year'] ?? '',
-                  price: formData['price'] ?? '',
-                  addedDate: DateTime.now(),
-                  damageRecord: formData['damageRecord'] ?? '0',
-                  description: formData['description']?.isNotEmpty == true
-                      ? formData['description']
-                      : null,
-                  kilometers: formData['kilometers']?.isNotEmpty == true
-                      ? formData['kilometers']
-                      : null,
-                  fuelType: formData['fuelType']?.isNotEmpty == true
-                      ? formData['fuelType']
-                      : null,
-                );
-
-                _saveCar(newCar);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('EKLE'),
+          child: Column(
+            children: [
+              // Dialog Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.directions_car_filled,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Yeni Araç Ekle',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+              ),
+              // Form Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: CarForm(
+                    formKey: formKey,
+                    onSave: (values) => formData.addAll(values),
+                  ),
+                ),
+              ),
+              // Action Buttons
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('İPTAL'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () {
+                        if (formKey.currentState?.validate() ?? false) {
+                          formKey.currentState?.save();
+                          _saveCar(Car(
+                            brand: formData['brand'] ?? '',
+                            model: formData['model'] ?? '',
+                            package: formData['package']?.isNotEmpty == true
+                                ? formData['package']
+                                : null,
+                            year: formData['year'] ?? '',
+                            price: formData['price'] ?? '',
+                            addedDate: formData['addedDate'] != null
+                                ? DateTime.parse(formData['addedDate']!)
+                                : DateTime.now(),
+                            damageRecord: formData['damageRecord'] ?? '0',
+                            description:
+                                formData['description']?.isNotEmpty == true
+                                    ? formData['description']
+                                    : null,
+                            kilometers:
+                                formData['kilometers']?.isNotEmpty == true
+                                    ? formData['kilometers']
+                                    : null,
+                            fuelType: formData['fuelType']?.isNotEmpty == true
+                                ? formData['fuelType']
+                                : null,
+                          ));
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Araç başarıyla eklendi'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('EKLE'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -678,71 +805,184 @@ class _CarListPageState extends State<CarListPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Araç Bilgilerini Düzenle'),
-        content: CarForm(
-          car: car,
-          formKey: formKey,
-          onSave: (values) {
-            formData.addAll(values);
-          },
+      builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+            minHeight: MediaQuery.of(context).size.height * 0.5,
           ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                formKey.currentState?.save();
-
-                final updatedCar = Car(
-                  id: car.id,
-                  brand: formData['brand'] ?? car.brand,
-                  model: formData['model'] ?? car.model,
-                  package: formData['package']?.isNotEmpty == true
-                      ? formData['package']
-                      : car.package,
-                  year: formData['year'] ?? car.year,
-                  price: formData['price'] ?? car.price,
-                  addedDate: formData['addedDate'] != null
-                      ? DateTime.parse(formData['addedDate']!)
-                      : car.addedDate,
-                  isSold: car.isSold,
-                  soldDate: formData['soldDate'] != null
-                      ? DateTime.parse(formData['soldDate']!)
-                      : car.soldDate,
-                  damageRecord: formData['damageRecord'] ?? car.damageRecord,
-                  description: formData['description']?.isNotEmpty == true
-                      ? formData['description']
-                      : car.description,
-                  kilometers: formData['kilometers']?.isNotEmpty == true
-                      ? formData['kilometers']
-                      : car.kilometers,
-                  fuelType: formData['fuelType']?.isNotEmpty == true
-                      ? formData['fuelType']
-                      : car.fuelType,
-                  customerName: car.customerName,
-                  customerCity: car.customerCity,
-                  customerPhone: car.customerPhone,
-                  customerTcNo: car.customerTcNo,
-                );
-
-                _saveCar(updatedCar);
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Araç bilgileri güncellendi'),
-                    duration: Duration(seconds: 2),
+          child: Column(
+            children: [
+              // Dialog Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
-                );
-              }
-            },
-            child: const Text('GÜNCELLE'),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Araç Düzenle',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          Text(
+                            '${car.brand} ${car.model}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Form Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: CarForm(
+                    car: car,
+                    formKey: formKey,
+                    onSave: (values) => formData.addAll(values),
+                  ),
+                ),
+              ),
+              // Action Buttons
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Silme Onayı'),
+                            content: const Text(
+                                'Bu aracı silmek istediğinize emin misiniz?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('VAZGEÇ'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('SİL'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true && car.id != null) {
+                          await _deleteCar(car.id!);
+                          if (mounted) Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('SİL'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('İPTAL'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () {
+                            if (formKey.currentState?.validate() ?? false) {
+                              formKey.currentState?.save();
+                              final updatedCar = Car(
+                                id: car.id,
+                                brand: formData['brand'] ?? car.brand,
+                                model: formData['model'] ?? car.model,
+                                package: formData['package']?.isNotEmpty == true
+                                    ? formData['package']
+                                    : car.package,
+                                year: formData['year'] ?? car.year,
+                                price: formData['price'] ?? car.price,
+                                addedDate: car.addedDate,
+                                isSold: car.isSold,
+                                soldDate: car.soldDate,
+                                damageRecord: formData['damageRecord'] ??
+                                    car.damageRecord,
+                                description:
+                                    formData['description']?.isNotEmpty == true
+                                        ? formData['description']
+                                        : car.description,
+                                kilometers:
+                                    formData['kilometers']?.isNotEmpty == true
+                                        ? formData['kilometers']
+                                        : car.kilometers,
+                                fuelType:
+                                    formData['fuelType']?.isNotEmpty == true
+                                        ? formData['fuelType']
+                                        : car.fuelType,
+                                customerName: car.customerName,
+                                customerCity: car.customerCity,
+                                customerPhone: car.customerPhone,
+                                customerTcNo: car.customerTcNo,
+                              );
+                              _saveCar(updatedCar);
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Araç bilgileri güncellendi'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                          child: const Text('KAYDET'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -751,106 +991,205 @@ class _CarListPageState extends State<CarListPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Container(
-          width: MediaQuery.of(context).size.width *
-              0.9, // Ekran genişliğinin %90'ı
+          width: MediaQuery.of(context).size.width * 0.9,
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height *
-                0.9, // Ekran yüksekliğinin %90'ı
-            minHeight:
-                MediaQuery.of(context).size.height * 0.5, // Minimum yükseklik
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+            minHeight: MediaQuery.of(context).size.height * 0.5,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Başlık
-                Row(
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                child: Row(
                   children: [
+                    CircleAvatar(
+                      backgroundColor: car.isSold
+                          ? Theme.of(context).colorScheme.secondary
+                          : Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.directions_car,
+                        color: car.isSold
+                            ? Theme.of(context).colorScheme.onSecondary
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: Text(
-                        '${car.brand} ${car.model}',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${car.brand} ${car.model}',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          if (car.package != null && car.package!.isNotEmpty)
+                            Text(
+                              car.package!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                            ),
+                        ],
                       ),
                     ),
                     if (car.isSold)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Theme.of(context)
                               .colorScheme
                               .secondary
                               .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
-                          'SATILDI',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.secondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'SATILDI',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.secondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                // İçerik
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildDetailItem(
-                            'Paket', car.package ?? 'Belirtilmemiş'),
-                        _buildDetailItem('Model Yılı', car.year),
-                        _buildDetailItem('Fiyat', '${car.price} TL'),
-                        _buildDetailItem(
+              ),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Temel Bilgiler
+                      _buildDetailSection(
+                        title: 'Temel Bilgiler',
+                        icon: Icons.info_outline,
+                        children: [
+                          _buildDetailRow('Model Yılı', car.year),
+                          _buildDetailRow('Fiyat', '${car.price} TL',
+                              isHighlighted: true),
+                          if (car.kilometers != null)
+                            _buildDetailRow(
+                                'Kilometre', '${car.kilometers} KM'),
+                          if (car.fuelType != null)
+                            _buildDetailRow('Yakıt Tipi', car.fuelType!),
+                          _buildDetailRow(
                             'Hasar Kaydı',
                             car.damageRecord != '0'
                                 ? '${car.damageRecord} TL'
-                                : 'Yok'),
-                        _buildDetailItem(
-                            'Eklenme Tarihi', dateFormat.format(car.addedDate)),
-                        if (car.description?.isNotEmpty ?? false)
-                          _buildDetailItem('Açıklama', car.description!),
-                        if (car.isSold) ...[
-                          const Divider(height: 32),
-                          Text(
-                            'Müşteri Bilgileri',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                : 'Yok',
+                            textColor: car.damageRecord != '0'
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).colorScheme.primary,
                           ),
-                          const SizedBox(height: 16),
-                          _buildDetailItem(
-                              'Satış Tarihi', dateFormat.format(car.soldDate!)),
-                          if (car.customerName?.isNotEmpty ?? false)
-                            _buildDetailItem('Müşteri', car.customerName!),
-                          if (car.customerCity?.isNotEmpty ?? false)
-                            _buildDetailItem('Şehir', car.customerCity!),
-                          if (car.customerPhone?.isNotEmpty ?? false)
-                            _buildDetailItem('Telefon', car.customerPhone!),
-                          if (car.customerTcNo?.isNotEmpty ?? false)
-                            _buildDetailItem('TC Kimlik No', car.customerTcNo!),
                         ],
-                        if (car.kilometers != null)
-                          _buildDetailItem('Kilometre', '${car.kilometers} KM'),
-                        if (car.fuelType != null)
-                          _buildDetailItem('Yakıt Tipi', car.fuelType!),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Tarih Bilgileri
+                      _buildDetailSection(
+                        title: 'Tarih Bilgileri',
+                        icon: Icons.calendar_today,
+                        children: [
+                          _buildDetailRow('Eklenme Tarihi',
+                              dateFormat.format(car.addedDate)),
+                          if (car.isSold && car.soldDate != null)
+                            _buildDetailRow('Satış Tarihi',
+                                dateFormat.format(car.soldDate!)),
+                        ],
+                      ),
+
+                      // Açıklama
+                      if (car.description?.isNotEmpty ?? false) ...[
+                        const SizedBox(height: 24),
+                        _buildDetailSection(
+                          title: 'Açıklama',
+                          icon: Icons.description_outlined,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceVariant
+                                    .withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(car.description!),
+                            ),
+                          ],
+                        ),
                       ],
+
+                      // Müşteri Bilgileri
+                      if (car.isSold) ...[
+                        const SizedBox(height: 24),
+                        _buildDetailSection(
+                          title: 'Müşteri Bilgileri',
+                          icon: Icons.person_outline,
+                          children: [
+                            _buildDetailRow(
+                                'Müşteri', car.customerName ?? 'Belirtilmemiş'),
+                            _buildDetailRow(
+                                'Şehir', car.customerCity ?? 'Belirtilmemiş'),
+                            _buildDetailRow('Telefon',
+                                car.customerPhone ?? 'Belirtilmemiş'),
+                            _buildDetailRow('TC Kimlik No',
+                                car.customerTcNo ?? 'Belirtilmemiş'),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              // Footer
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).dividerColor,
                     ),
                   ),
                 ),
-                // Butonlar
-                const SizedBox(height: 24),
-                Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
@@ -868,32 +1207,78 @@ class _CarListPageState extends State<CarListPage> {
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
+  Widget _buildDetailSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    bool isHighlighted = false,
+    Color? textColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.secondary,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyLarge,
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: isHighlighted
+                  ? Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      )
+                  : Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: textColor,
+                      ),
+            ),
           ),
         ],
       ),
@@ -901,169 +1286,240 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   void _showFilterDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => SingleChildScrollView(
+        builder: (context, setState) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                title: const Text('Filtreler'),
-                trailing: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedBrand = null;
-                      selectedYear = null;
-                      priceRange = null;
-                      showOnlySoldCars = false;
-                      showOnlyInStock = false;
-                      selectedFuelType = null;
-                      selectedStartDate = null;
-                      selectedEndDate = null;
-                      selectedMonth = null;
-                      selectedFilterYear = null;
-                    });
-                  },
-                  child: const Text('Temizle'),
+              // Üst kısım
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    DropdownButtonFormField<String>(
-                      value: selectedBrand,
-                      items: _getUniqueBrands(),
-                      onChanged: (value) =>
-                          setState(() => selectedBrand = value),
-                      decoration: const InputDecoration(
-                        labelText: 'Marka',
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.filter_list,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Filtreler',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
                     ),
-                    // Yeni eklenen switch'ler
-                    SwitchListTile(
-                      title: const Text('Sadece Stoktaki Araçlar'),
-                      subtitle: const Text('Satılmamış araçları göster'),
-                      value: showOnlyInStock,
-                      onChanged: (value) {
+                    TextButton.icon(
+                      onPressed: () {
                         setState(() {
-                          showOnlyInStock = value;
-                          if (value) {
-                            showOnlySoldCars =
-                                false; // Biri seçildiğinde diğerini kapat
-                          }
+                          selectedBrand = null;
+                          selectedYear = null;
+                          priceRange = null;
+                          showOnlySoldCars = false;
+                          showOnlyInStock = false;
+                          selectedFuelType = null;
+                          selectedMonth = null;
+                          selectedFilterYear = null;
                         });
                       },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Temizle'),
                     ),
-                    SwitchListTile(
-                      title: const Text('Sadece Satılan Araçlar'),
-                      subtitle: const Text('Satılmış araçları göster'),
-                      value: showOnlySoldCars,
-                      onChanged: (value) {
-                        setState(() {
-                          showOnlySoldCars = value;
-                          if (value) {
-                            showOnlyInStock =
-                                false; // Biri seçildiğinde diğerini kapat
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: selectedFuelType,
-                      items: _getUniqueFuelTypes(),
-                      onChanged: (value) =>
-                          setState(() => selectedFuelType = value),
-                      decoration: const InputDecoration(
-                        labelText: 'Yakıt Tipi',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tarih Filtresi',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: selectedMonth,
-                                  items: [
-                                    const DropdownMenuItem(
-                                      value: null,
-                                      child: Text('Tüm Aylar'),
-                                    ),
-                                    ..._months.asMap().entries.map((entry) {
-                                      return DropdownMenuItem(
-                                        value: (entry.key + 1).toString(),
-                                        child: Text(entry.value),
-                                      );
-                                    }),
-                                  ],
-                                  onChanged: (value) =>
-                                      setState(() => selectedMonth = value),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Ay',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: selectedFilterYear,
-                                  items: [
-                                    const DropdownMenuItem(
-                                      value: null,
-                                      child: Text('Tüm Yıllar'),
-                                    ),
-                                    ..._years.map((year) => DropdownMenuItem(
-                                          value: year,
-                                          child: Text(year),
-                                        )),
-                                  ],
-                                  onChanged: (value) => setState(
-                                      () => selectedFilterYear = value),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Yıl',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(),
                   ],
                 ),
               ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      // Durum filtreleri
+                      Text(
+                        'Araç Durumu',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        title: const Text('Sadece stoktaki araçları göster'),
+                        value: showOnlyInStock,
+                        onChanged: (value) {
+                          setState(() {
+                            showOnlyInStock = value ?? false;
+                            if (value == true) {
+                              showOnlySoldCars = false;
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Sadece satılan araçları göster'),
+                        value: showOnlySoldCars,
+                        onChanged: (value) {
+                          setState(() {
+                            showOnlySoldCars = value ?? false;
+                            if (value == true) {
+                              showOnlyInStock = false;
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+
+                      // Marka ve yakıt tipi filtreleri
+                      Text(
+                        'Araç Özellikleri',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDropdown(
+                        label: 'Marka',
+                        value: selectedBrand,
+                        items: _getUniqueBrands(),
+                        onChanged: (value) =>
+                            setState(() => selectedBrand = value),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDropdown(
+                        label: 'Yakıt Tipi',
+                        value: selectedFuelType,
+                        items: _getUniqueFuelTypes(),
+                        onChanged: (value) =>
+                            setState(() => selectedFuelType = value),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Tarih filtreleri
+                      Text(
+                        'Tarih Filtreleri',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdown(
+                              label: 'Ay',
+                              value: selectedMonth,
+                              items: [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('Tüm Aylar'),
+                                ),
+                                ..._months.asMap().entries.map((entry) {
+                                  return DropdownMenuItem(
+                                    value: (entry.key + 1).toString(),
+                                    child: Text(entry.value),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) =>
+                                  setState(() => selectedMonth = value),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildDropdown(
+                              label: 'Yıl',
+                              value: selectedFilterYear,
+                              items: [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('Tüm Yıllar'),
+                                ),
+                                ..._years.map((year) => DropdownMenuItem(
+                                      value: year,
+                                      child: Text(year),
+                                    )),
+                              ],
+                              onChanged: (value) =>
+                                  setState(() => selectedFilterYear = value),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+              // Uygula butonu
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: () {
-                    _applyFilters();
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Filtreleri Uygula'),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      _applyFilters();
+                      Navigator.pop(context);
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('FİLTRELERİ UYGULA'),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String? value,
+    required List<DropdownMenuItem<String>> items,
+    required Function(String?) onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      icon: const Icon(Icons.keyboard_arrow_down),
     );
   }
 
@@ -1150,38 +1606,279 @@ class _CarListPageState extends State<CarListPage> {
     });
   }
 
-  void _showCustomerDetails(Car car) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Müşteri Bilgileri'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailItem('Müşteri', car.customerName ?? 'Belirtilmemiş'),
-            _buildDetailItem('Şehir', car.customerCity ?? 'Belirtilmemiş'),
-            _buildDetailItem('Telefon', car.customerPhone ?? 'Belirtilmemiş'),
-            _buildDetailItem(
-                'TC Kimlik No', car.customerTcNo ?? 'Belirtilmemiş'),
-            _buildDetailItem('Satış Tarihi', dateFormat.format(car.soldDate!)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('KAPAT'),
+  Widget _buildDetailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              _showUpdateCustomerDialog(car);
-            },
-            icon: const Icon(Icons.edit),
-            label: const Text('BİLGİLERİ GÜNCELLE'),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showCustomerDetails(Car car) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      size: 28,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          car.customerName ?? 'İsimsiz Müşteri',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        if (car.customerCity != null)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                car.customerCity!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Content
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color:
+                        Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildCustomerInfoRow(
+                        Icons.phone,
+                        'Telefon',
+                        car.customerPhone ?? 'Belirtilmemiş',
+                      ),
+                      const Divider(height: 24),
+                      _buildCustomerInfoRow(
+                        Icons.badge_outlined,
+                        'TC Kimlik No',
+                        car.customerTcNo ?? 'Belirtilmemiş',
+                      ),
+                      const Divider(height: 24),
+                      _buildCustomerInfoRow(
+                        Icons.sell,
+                        'Satış Tarihi',
+                        dateFormat.format(car.soldDate!),
+                        isHighlighted: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Araç Bilgisi
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .secondaryContainer
+                      .withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.directions_car,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Satın Alınan Araç',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
+                                ),
+                          ),
+                          Text(
+                            '${car.brand} ${car.model}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .secondary
+                            .withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        car.price,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.secondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Action Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('KAPAT'),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showUpdateCustomerDialog(car);
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text('DÜZENLE'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerInfoRow(IconData icon, String label, String value,
+      {bool isHighlighted = false}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color:
+                Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: isHighlighted
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: isHighlighted ? FontWeight.bold : null,
+                      color: isHighlighted
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1249,9 +1946,120 @@ class _CarListPageState extends State<CarListPage> {
     );
   }
 
+  void _showDeleteConfirmation(Car car) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Aracı Sil'),
+        content: Text(
+            '${car.brand} ${car.model} aracını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('VAZGEÇ'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () async {
+              if (car.id != null) {
+                await _deleteCar(car.id!);
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Araç başarıyla silindi'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('SİL'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Car car) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (car.isSold)
+          IconButton.outlined(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => _showCustomerDetails(car),
+            tooltip: 'Müşteri Bilgileri',
+          ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () => _showEditCarDialog(car),
+          tooltip: 'Düzenle',
+        ),
+        const SizedBox(width: 8),
+        IconButton.filled(
+          icon: Icon(
+            car.isSold ? Icons.undo : Icons.check_circle_outline,
+          ),
+          onPressed: () => _showToggleSoldDialog(car),
+          tooltip:
+              car.isSold ? 'Satış durumunu geri al' : 'Satıldı olarak işaretle',
+        ),
+        const SizedBox(width: 8),
+        IconButton.outlined(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () => _showDeleteConfirmation(car),
+          tooltip: 'Sil',
+          style: IconButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildFeatureItemWithDivider(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 16,
+          width: 1,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          color:
+              Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
+        ),
+        _buildFeatureItem(icon, text),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ],
+    );
   }
 }

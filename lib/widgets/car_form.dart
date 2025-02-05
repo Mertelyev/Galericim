@@ -22,24 +22,35 @@ class CarForm extends StatefulWidget {
 
 class _CarFormState extends State<CarForm> {
   final Map<String, String> _formData = {};
+  final Map<String, TextEditingController> controllers = {};
+  DateTime selectedDate = DateTime.now(); // Varsayılan olarak günün tarihi
 
-  Future<DateTime?> _showDatePicker(
-      BuildContext context, DateTime? initialDate) async {
-    return showDatePicker(
+  @override
+  void initState() {
+    super.initState();
+    // Var olan araç düzenleniyorsa o tarihi, yoksa günün tarihini kullan
+    if (widget.car != null) {
+      selectedDate = widget.car!.addedDate;
+    }
+    // ...existing controller initialization code...
+  }
+
+  // Tarih seçici dialog
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initialDate ?? DateTime.now(),
+      initialDate: selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
-      locale: const Locale('tr', 'TR'), // Türkçe dil desteği
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            dialogBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          ),
-          child: child!,
-        );
-      },
+      locale: const Locale('tr', 'TR'),
     );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+      // Seçilen tarihi form verilerine ekle
+      widget.onSave?.call({'addedDate': selectedDate.toIso8601String()});
+    }
   }
 
   Widget _buildDateField({
@@ -59,6 +70,13 @@ class _CarFormState extends State<CarForm> {
         labelText: label,
         prefixIcon: Icon(icon),
         hintText: 'GG.AA.YYYY',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
       initialValue: dateStr,
       keyboardType: TextInputType.datetime,
@@ -248,17 +266,21 @@ class _CarFormState extends State<CarForm> {
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-              _buildDateField(
-                label: 'Eklenme Tarihi',
-                fieldKey: 'addedDate',
-                icon: Icons.date_range,
-                initialValue: widget.car?.addedDate,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Eklenme tarihi gereklidir';
-                  }
-                  return null;
-                },
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Eklenme Tarihi',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    suffixIcon: const Icon(Icons.calendar_today),
+                  ),
+                  child: Text(
+                    DateFormat('dd.MM.yyyy').format(selectedDate),
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
               ),
               if (widget.car?.isSold ?? false) ...[
                 const SizedBox(height: 16),
@@ -319,6 +341,13 @@ class _CarFormState extends State<CarForm> {
         labelText: label,
         hintText: hintText,
         prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
       initialValue: initialValue,
       maxLines: maxLines,
@@ -343,6 +372,13 @@ class _CarFormState extends State<CarForm> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
       ),
       value: initialValue,
       items: [
