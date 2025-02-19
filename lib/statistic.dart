@@ -13,6 +13,8 @@ class _StatisticPageState extends State<StatisticPage> {
   int totalCars = 0;
   int soldCars = 0;
   Map<String, int> soldBrandDistribution = {};
+  Map<String, int> fuelTypeDistribution = {}; // Yeni eklendi
+  double averagePrice = 0; // Yeni eklendi
   bool isLoading = true;
 
   @override
@@ -24,8 +26,8 @@ class _StatisticPageState extends State<StatisticPage> {
   Future<void> _loadStatistics() async {
     try {
       final cars = await dbHelper.getCars();
+      final soldCarsOnly = cars.where((car) => car.isSold).toList();
 
-      // Toplam ve satılan araç sayısını hesapla
       setState(() {
         totalCars = cars.length;
         soldCars = cars.where((car) => car.isSold).length;
@@ -37,6 +39,26 @@ class _StatisticPageState extends State<StatisticPage> {
                 (soldBrandDistribution[car.brand] ?? 0) + 1;
           }
         }
+
+        // Yakıt tipi dağılımı hesapla
+        fuelTypeDistribution.clear();
+        for (var car in soldCarsOnly) {
+          if (car.fuelType != null) {
+            fuelTypeDistribution[car.fuelType!] =
+                (fuelTypeDistribution[car.fuelType!] ?? 0) + 1;
+          }
+        }
+
+        // Ortalama satış fiyatı hesapla
+        if (soldCarsOnly.isNotEmpty) {
+          final totalPrice = soldCarsOnly.fold<double>(
+            0,
+            (sum, car) =>
+                sum + (double.tryParse(car.price.replaceAll(',', '')) ?? 0),
+          );
+          averagePrice = totalPrice / soldCarsOnly.length;
+        }
+
         isLoading = false;
       });
     } catch (e) {
@@ -115,6 +137,11 @@ class _StatisticPageState extends State<StatisticPage> {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final dynamicColor = brightness == Brightness.dark
+        ? Theme.of(context).colorScheme.secondary
+        : Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('İstatistikler'),
@@ -163,8 +190,7 @@ class _StatisticPageState extends State<StatisticPage> {
                                     Icon(
                                       Icons.directions_car,
                                       size: 24,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
+                                      color: dynamicColor,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
@@ -202,9 +228,7 @@ class _StatisticPageState extends State<StatisticPage> {
                                     Icon(
                                       Icons.inventory_2,
                                       size: 24,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .secondary,
+                                      color: dynamicColor,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
@@ -235,18 +259,14 @@ class _StatisticPageState extends State<StatisticPage> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondaryContainer,
+                                          color: dynamicColor.withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           '%${(((totalCars - soldCars) / totalCars) * 100).round()}',
                                           style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSecondaryContainer,
+                                            color: dynamicColor,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
                                           ),
@@ -267,9 +287,7 @@ class _StatisticPageState extends State<StatisticPage> {
                                     Icon(
                                       Icons.sell,
                                       size: 24,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .tertiary,
+                                      color: dynamicColor,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
@@ -300,18 +318,14 @@ class _StatisticPageState extends State<StatisticPage> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .tertiaryContainer,
+                                          color: dynamicColor.withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           '%${((soldCars / totalCars) * 100).round()}',
                                           style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onTertiaryContainer,
+                                            color: dynamicColor,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
                                           ),
@@ -348,6 +362,34 @@ class _StatisticPageState extends State<StatisticPage> {
                             .toList(),
                       ),
                     ],
+
+                    if (fuelTypeDistribution.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _buildDetailCard(
+                        title: 'Yakıt Tipi Dağılımı',
+                        icon: Icons.local_gas_station,
+                        children: _calculatePercentages(fuelTypeDistribution)
+                            .map((item) => _buildDistributionRow(
+                                  item['name'] as String,
+                                  item['percentage'] as int,
+                                  item['count'] as int,
+                                ))
+                            .toList(),
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+                    _buildDetailCard(
+                      title: 'Satış İstatistikleri',
+                      icon: Icons.analytics,
+                      children: [
+                        _buildInfoRow(
+                          'Ortalama Satış Fiyatı',
+                          '${averagePrice.toStringAsFixed(0)} TL',
+                        ),
+                        // Daha fazla istatistik eklenebilir
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -356,6 +398,11 @@ class _StatisticPageState extends State<StatisticPage> {
   }
 
   Widget _buildDistributionRow(String name, int percentage, int count) {
+    final brightness = Theme.of(context).brightness;
+    final dynamicColor = brightness == Brightness.dark
+        ? Theme.of(context).colorScheme.secondary
+        : Theme.of(context).colorScheme.primary;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -373,7 +420,7 @@ class _StatisticPageState extends State<StatisticPage> {
               Text(
                 '$count araç',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: dynamicColor,
                     ),
               ),
               const SizedBox(width: 8),
@@ -383,13 +430,13 @@ class _StatisticPageState extends State<StatisticPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: dynamicColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '%$percentage',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: dynamicColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -403,12 +450,31 @@ class _StatisticPageState extends State<StatisticPage> {
             child: LinearProgressIndicator(
               value: percentage / 100,
               minHeight: 8,
-              backgroundColor:
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
-              ),
+              backgroundColor: dynamicColor.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(dynamicColor),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
           ),
         ],
       ),
