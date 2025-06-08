@@ -9,29 +9,49 @@ import './trends.dart';
 import './statistic.dart';
 import './settings.dart';
 import './carlist.dart';
+import './services/logging_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Flutter binding'i başlat
-  // Web platformunda SQLite'ı başlat
-  if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb;
-    // Web worker'ı başlat
-    sqfliteFfiInit();
-  } else {
-    // Diğer platformlarda SQLite'ı başlat
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+  final logger = LoggingService();
+  
+  try {
+    logger.info('Application starting up');
+    WidgetsFlutterBinding.ensureInitialized(); // Flutter binding'i başlat
+    
+    // Web platformunda SQLite'ı başlat
+    if (kIsWeb) {
+      logger.info('Initializing database for web platform');
+      databaseFactory = databaseFactoryFfiWeb;
+      // Web worker'ı başlat
+      sqfliteFfiInit();
+    } else {
+      logger.info('Initializing database for native platform');
+      // Diğer platformlarda SQLite'ı başlat
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+
+    // Tema provider'ı oluştur
+    logger.info('Creating theme provider');
+    final themeProvider = await ThemeProvider.create();
+    logger.info('Application initialization completed successfully');
+
+    runApp(
+      ChangeNotifierProvider(
+        create: (_) => themeProvider,
+        child: const MyApp(),
+      ),
+    );
+  } catch (e, stackTrace) {
+    logger.error('Failed to initialize application', error: e, stackTrace: stackTrace);
+    // Still try to run the app with default theme
+    runApp(
+      ChangeNotifierProvider(
+        create: (_) => ThemeProvider(),
+        child: const MyApp(),
+      ),
+    );
   }
-
-  // Tema provider'ı oluştur
-  final themeProvider = await ThemeProvider.create();
-
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => themeProvider,
-      child: const MyApp(),
-    ),
-  );
 }
 
 class MyApp extends StatelessWidget {

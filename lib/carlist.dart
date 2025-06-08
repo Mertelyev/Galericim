@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Tarih formatlaması için eklendi
 import 'db_helper.dart';
 import 'car.dart';
-import 'widgets/car_form.dart'; // Add this import
+import 'widgets/car_form.dart';
+import 'widgets/paginated_list_view.dart';
+import 'services/logging_service.dart';
+import 'services/search_service.dart';
+import 'services/notification_service.dart';
 
 class CarListPage extends StatefulWidget {
   const CarListPage({super.key});
@@ -13,12 +17,18 @@ class CarListPage extends StatefulWidget {
 
 class _CarListPageState extends State<CarListPage> {
   final List<Car> cars = [];
-  final dateFormat = DateFormat('dd.MM.yyyy');
-  final dbHelper = DBHelper();
+  final dateFormat = DateFormat('dd.MM.yyyy');  final dbHelper = DBHelper();
+  final logger = LoggingService();
+  final searchService = SearchService();
+  final notificationService = NotificationService();
   List<Car> filteredCars = [];
   bool isLoading = true;
   bool isSearching = false;
   final searchController = TextEditingController();
+
+  // Advanced search options
+  SearchOptions _currentSearchOptions = const SearchOptions();
+  bool _isAdvancedSearchOpen = false;
 
   // Filtreleme seçenekleri için
   String? selectedBrand;
@@ -55,15 +65,26 @@ class _CarListPageState extends State<CarListPage> {
     }
     return years;
   }
-
   @override
   void initState() {
     super.initState();
     _loadCars();
+    _initializeSearchService();
   }
-
-  Future<void> _loadCars() async {
+  Future<void> _initializeSearchService() async {
     try {
+      await searchService.buildIndex();
+      logger.info('Search service initialized', tag: 'CarList');
+    } catch (e, stackTrace) {
+      logger.error('Failed to initialize search service', tag: 'CarList', error: e, stackTrace: stackTrace);
+    }
+  }  Future<void> _loadCars() async {
+    setState(() {
+      isLoading = true;
+    });
+    
+    try {
+      logger.info('Loading cars from database', tag: 'CarList');
       final loadedCars = await dbHelper.getCars();
       setState(() {
         cars.clear(); // Önceki araçları temizle
@@ -71,9 +92,19 @@ class _CarListPageState extends State<CarListPage> {
         filteredCars = loadedCars;
         isLoading = false;
       });
-    } catch (e) {
-      debugPrint('Araçlar yüklenirken hata: $e');
-      // Kullanıcıya hata mesajı göster
+      
+      // Rebuild search index with new data
+      await searchService.buildIndex();
+      
+      logger.info('Successfully loaded ${loadedCars.length} cars', tag: 'CarList');
+    } catch (e, stackTrace) {
+      logger.error(
+        'Failed to load cars',
+        tag: 'CarList',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Araçlar yüklenirken hata oluştu: $e')),
@@ -115,78 +146,108 @@ class _CarListPageState extends State<CarListPage> {
         }
         return b.addedDate.compareTo(a.addedDate);
       });
-  }
-
-  void _filterCars(String query) {
+  }  Future<void> _performSearch(String query) async {
+    if (!mounted) return;
+    
     setState(() {
-      if (query.isEmpty) {
-        filteredCars = cars;
+      isLoading = true;
+    });
+
+    try {
+      List<Car> results;
+      if (query.isEmpty && _currentSearchOptions == const SearchOptions()) {
+        // No search query and default options - show all cars
+        results = cars;
       } else {
-        final searchLower = query.toLowerCase().trim();
-
-        filteredCars = cars.where((car) {
-          // Araç bilgileri araması
-          final brandMatch = car.brand.toLowerCase().contains(searchLower);
-          final modelMatch = car.model.toLowerCase().contains(searchLower);
-          final packageMatch =
-              car.package?.toLowerCase().contains(searchLower) ?? false;
-
-          // Müşteri bilgileri araması
-          final customerNameMatch =
-              car.customerName?.toLowerCase().contains(searchLower) ?? false;
-          final customerCityMatch =
-              car.customerCity?.toLowerCase().contains(searchLower) ?? false;
-          final customerPhoneMatch =
-              car.customerPhone?.toLowerCase().contains(searchLower) ?? false;
-          final customerTcNoMatch =
-              car.customerTcNo?.toLowerCase().contains(searchLower) ?? false;
-
-          return brandMatch ||
-              modelMatch ||
-              packageMatch ||
-              customerNameMatch ||
-              customerCityMatch ||
-              customerPhoneMatch ||
-              customerTcNoMatch;
-        }).toList();
-
-        // Sonuçları alaka düzeyine göre sırala
-        filteredCars.sort((a, b) {
-          int scoreA = _getSearchScore(a, searchLower);
-          int scoreB = _getSearchScore(b, searchLower);
-          return scoreB.compareTo(scoreA);
+        // Use SearchService for advanced search
+        results = await searchService.search(query, options: _currentSearchOptions);
+        
+        // Log search statistics
+        final stats = searchService.getStatistics();
+        logger.info('Search performed', tag: 'CarList', data: {
+          'query': query,
+          'resultCount': results.length,
+          'totalCars': stats.totalCarsIndexed,
+          'isAdvanced': _currentSearchOptions != const SearchOptions(),
         });
       }
-    });
+
+      if (mounted) {
+        setState(() {
+          filteredCars = results;
+          isLoading = false;
+        });
+          // Show search results notification if it's an actual search
+        if (query.isNotEmpty || _currentSearchOptions != const SearchOptions()) {
+          notificationService.showSuccess(
+            '${results.length} araç bulundu',
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      logger.error('Search failed', tag: 'CarList', error: e, stackTrace: stackTrace);
+      
+      if (mounted) {
+        // Fallback to local search on error
+        setState(() {
+          filteredCars = _fallbackSearch(query);
+          isLoading = false;
+        });
+          notificationService.showError(
+          'Arama sırasında hata oluştu',
+        );
+      }
+    }
   }
 
-  int _getSearchScore(Car car, String query) {
-    int score = 0;
+  List<Car> _fallbackSearch(String query) {
+    if (query.isEmpty) return cars;
+    
+    final searchLower = query.toLowerCase().trim();
+    return cars.where((car) {
+      // Araç bilgileri araması
+      final brandMatch = car.brand.toLowerCase().contains(searchLower);
+      final modelMatch = car.model.toLowerCase().contains(searchLower);
+      final packageMatch =
+          car.package?.toLowerCase().contains(searchLower) ?? false;
 
-    // Tam eşleşmeler (en yüksek öncelik)
-    if (car.brand.toLowerCase() == query) score += 100;
-    if (car.model.toLowerCase() == query) score += 100;
-    if (car.package?.toLowerCase() == query) score += 100;
-    if (car.customerName?.toLowerCase() == query) score += 100;
-    if (car.customerTcNo?.toLowerCase() == query) score += 100;
+      // Müşteri bilgileri araması
+      final customerNameMatch =
+          car.customerName?.toLowerCase().contains(searchLower) ?? false;
+      final customerCityMatch =
+          car.customerCity?.toLowerCase().contains(searchLower) ?? false;
+      final customerPhoneMatch =
+          car.customerPhone?.toLowerCase().contains(searchLower) ?? false;
+      final customerTcNoMatch =
+          car.customerTcNo?.toLowerCase().contains(searchLower) ?? false;
 
-    // Başlangıç eşleşmeleri (orta öncelik)
-    if (car.brand.toLowerCase().startsWith(query)) score += 50;
-    if (car.model.toLowerCase().startsWith(query)) score += 50;
-    if (car.package?.toLowerCase().startsWith(query) ?? false) score += 50;
-    if (car.customerName?.toLowerCase().startsWith(query) ?? false) score += 50;
-    if (car.customerCity?.toLowerCase().startsWith(query) ?? false) score += 50;
+      return brandMatch ||
+          modelMatch ||
+          packageMatch ||
+          customerNameMatch ||
+          customerCityMatch ||
+          customerPhoneMatch ||
+          customerTcNoMatch;
+    }).toList();  }
 
-    // İçerik eşleşmeleri (düşük öncelik)
-    if (car.brand.toLowerCase().contains(query)) score += 25;
-    if (car.model.toLowerCase().contains(query)) score += 25;
-    if (car.package?.toLowerCase().contains(query) ?? false) score += 25;
-    if (car.customerName?.toLowerCase().contains(query) ?? false) score += 25;
-    if (car.customerCity?.toLowerCase().contains(query) ?? false) score += 25;
-    if (car.customerPhone?.toLowerCase().contains(query) ?? false) score += 25;
-    if (car.customerTcNo?.toLowerCase().contains(query) ?? false) score += 25;
+  void _showAdvancedSearchDialog() async {
+    final result = await showDialog<SearchOptions>(
+      context: context,
+      builder: (context) => _AdvancedSearchDialog(
+        currentOptions: _currentSearchOptions,
+        cars: cars,
+      ),
+    );
 
-    return score;
+    if (result != null) {
+      setState(() {
+        _currentSearchOptions = result;
+        _isAdvancedSearchOpen = true;
+      });
+      
+      // Perform search with new options
+      await _performSearch(searchController.text);
+    }
   }
 
   @override
@@ -205,11 +266,10 @@ class _CarListPageState extends State<CarListPage> {
                   hintStyle: Theme.of(context).brightness == Brightness.dark
                       ? TextStyle(color: Colors.white.withOpacity(0.7))
                       : TextStyle(color: Colors.black.withOpacity(0.7)),
-                ),
-                style: Theme.of(context).brightness == Brightness.dark
+                ),                style: Theme.of(context).brightness == Brightness.dark
                     ? const TextStyle(color: Colors.white)
                     : const TextStyle(color: Colors.black),
-                onChanged: _filterCars,
+                onChanged: _performSearch,
               ),
         elevation: 0,
         scrolledUnderElevation: 2,
@@ -219,17 +279,27 @@ class _CarListPageState extends State<CarListPage> {
           if (isSearching)
             IconButton.outlined(
               icon: const Icon(Icons.close),
-              onPressed: () {
-                setState(() {
-                  isSearching = false;
-                  searchController.clear();
-                  filteredCars = cars;
-                });
+              onPressed: () {              setState(() {
+                isSearching = false;
+                searchController.clear();
+                _currentSearchOptions = const SearchOptions();
+                _isAdvancedSearchOpen = false;
+                filteredCars = cars;
+              });
               },
-            ),
-          IconButton.outlined(
+            ),          IconButton.outlined(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
+          ),
+          IconButton.outlined(
+            icon: Icon(
+              Icons.tune,
+              color: _isAdvancedSearchOpen 
+                  ? Theme.of(context).colorScheme.primary 
+                  : null,
+            ),
+            onPressed: _showAdvancedSearchDialog,
+            tooltip: 'Gelişmiş Arama',
           ),
           const SizedBox(width: 8),
         ],
@@ -255,16 +325,32 @@ class _CarListPageState extends State<CarListPage> {
                           ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: _getSortedCars().length,
-                      itemBuilder: (context, index) {
-                        final car = _getSortedCars()[index];
+                    )                  : PaginatedListView(
+                      items: _getSortedCars(),
+                      itemsPerPage: 15,
+                      itemBuilder: (context, index, car) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: _buildCarTile(car),
                         );
                       },
+                      emptyWidget: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.directions_car_outlined,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Henüz araç eklenmemiş',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
             ),
       // Floating Action Buttons için daha modern bir yerleşim
@@ -564,40 +650,47 @@ class _CarListPageState extends State<CarListPage> {
     final Map<String, String> formData = {};
 
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: context,      builder: (context) => AlertDialog(
         title: const Text('Satış Durumu Değişikliği'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(car.isSold
-                ? 'Bu aracın satıldı işaretini kaldırmak istiyor musunuz?'
-                : 'Bu aracı satıldı olarak işaretlemek istiyor musunuz?'),
-            const SizedBox(height: 16),
-            if (!car.isSold) ...[
-              const Text(
-                'Müşteri Bilgileri (Opsiyonel)',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              CarForm(
-                formKey: formKey,
-                isCustomerForm: true,
-                onSave: (values) {
-                  formData.addAll(values);
-                },
-              ),
-            ],
-          ],
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(car.isSold
+                    ? 'Bu aracın satıldı işaretini kaldırmak istiyor musunuz?'
+                    : 'Bu aracı satıldı olarak işaretlemek istiyor musunuz?'),
+                const SizedBox(height: 16),
+                if (!car.isSold) ...[
+                  const Text(
+                    'Müşteri Bilgileri (Opsiyonel)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  CarForm(
+                    formKey: formKey,
+                    isCustomerForm: true,
+                    onSave: (values) {
+                      formData.addAll(values);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('İPTAL'),
-          ),
-          FilledButton(
+          ),          FilledButton(
             onPressed: () async {
               formKey.currentState?.save();
+              final navigator = Navigator.of(context);
               final updatedCar = car.isSold
                   ? Car(
                       id: car.id,
@@ -631,7 +724,7 @@ class _CarListPageState extends State<CarListPage> {
                     );
               await _saveCar(updatedCar);
               if (!mounted) return;
-              Navigator.pop(context);
+              navigator.pop();
             },
             child: Text((car.isSold ? 'GERİ AL' : 'SATILDI').toUpperCase()),
           ),
@@ -717,11 +810,12 @@ class _CarListPageState extends State<CarListPage> {
                       onPressed: () => Navigator.pop(context),
                       child: const Text('İPTAL'),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
+                    const SizedBox(width: 8),                    FilledButton(
                       onPressed: () async {
                         if (formKey.currentState?.validate() ?? false) {
                           formKey.currentState?.save();
+                          final navigator = Navigator.of(context);
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
                           await _saveCar(Car(
                             brand: formData['brand'] ?? '',
                             model: formData['model'] ?? '',
@@ -744,11 +838,10 @@ class _CarListPageState extends State<CarListPage> {
                                     : null,
                             fuelType: formData['fuelType']?.isNotEmpty == true
                                 ? formData['fuelType']
-                                : null,
-                          ));
+                                : null,                          ));
                           if (!mounted) return;
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          navigator.pop();
+                          scaffoldMessenger.showSnackBar(
                             const SnackBar(
                               content: Text('Araç başarıyla eklendi'),
                               behavior: SnackBarBehavior.floating,
@@ -859,8 +952,8 @@ class _CarListPageState extends State<CarListPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton.icon(
-                      onPressed: () async {
+                    TextButton.icon(                      onPressed: () async {
+                        final navigator = Navigator.of(context);
                         final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
@@ -878,10 +971,10 @@ class _CarListPageState extends State<CarListPage> {
                               ),
                             ],
                           ),
-                        );
-                        if (confirmed == true && car.id != null) {
+                        );                        if (confirmed == true && car.id != null) {
                           await _deleteCar(car.id!);
-                          if (mounted) Navigator.pop(context);
+                          if (!mounted) return;
+                          navigator.pop();
                         }
                       },
                       icon: const Icon(Icons.delete_outline),
@@ -897,10 +990,11 @@ class _CarListPageState extends State<CarListPage> {
                           child: const Text('İPTAL'),
                         ),
                         const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () async {
+                        FilledButton(                          onPressed: () async {
                             if (formKey.currentState?.validate() ?? false) {
                               formKey.currentState?.save();
+                              final navigator = Navigator.of(context);
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
                               final updatedCar = Car(
                                 id: car.id,
                                 brand: formData['brand'] ?? car.brand,
@@ -931,11 +1025,10 @@ class _CarListPageState extends State<CarListPage> {
                                 customerCity: car.customerCity,
                                 customerPhone: car.customerPhone,
                                 customerTcNo: car.customerTcNo,
-                              );
-                              await _saveCar(updatedCar);
+                              );                              await _saveCar(updatedCar);
                               if (!mounted) return;
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              navigator.pop();
+                              scaffoldMessenger.showSnackBar(
                                 const SnackBar(
                                   content: Text('Araç bilgileri güncellendi'),
                                   behavior: SnackBarBehavior.floating,
@@ -1826,19 +1919,25 @@ class _CarListPageState extends State<CarListPage> {
 
   void _showUpdateCustomerDialog(Car car) {
     final formKey = GlobalKey<FormState>();
-    final Map<String, String> formData = {};
-
-    showDialog(
+    final Map<String, String> formData = {};    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Müşteri Bilgilerini Güncelle'),
-        content: CarForm(
-          car: car,
-          formKey: formKey,
-          isCustomerForm: true,
-          onSave: (values) {
-            formData.addAll(values);
-          },
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: CarForm(
+              car: car,
+              formKey: formKey,
+              isCustomerForm: true,
+              onSave: (values) {
+                formData.addAll(values);
+              },
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -1868,18 +1967,18 @@ class _CarListPageState extends State<CarListPage> {
                   customerCity: formData['customerCity'],
                   customerPhone: formData['customerPhone'],
                   customerTcNo: formData['customerTcNo'],
-                );
-
-                await _saveCar(updatedCar);
+                );                await _saveCar(updatedCar);
                 if (!mounted) return;
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Müşteri bilgileri güncellendi'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Müşteri bilgileri güncellendi'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
               }
             },
             child: const Text('GÜNCELLE'),
@@ -2004,7 +2103,472 @@ class _CarListPageState extends State<CarListPage> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
+      ],    );
+  }
+}
+
+class _AdvancedSearchDialog extends StatefulWidget {
+  final SearchOptions currentOptions;
+  final List<Car> cars;
+
+  const _AdvancedSearchDialog({
+    required this.currentOptions,
+    required this.cars,
+  });
+
+  @override
+  State<_AdvancedSearchDialog> createState() => _AdvancedSearchDialogState();
+}
+
+class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
+  late SearchOptions _options;
+  late TextEditingController _minPriceController;
+  late TextEditingController _maxPriceController;
+  late TextEditingController _minYearController;
+  late TextEditingController _maxYearController;
+
+  @override
+  void initState() {
+    super.initState();
+    _options = widget.currentOptions;
+    _minPriceController = TextEditingController(
+      text: _options.minPrice?.toString() ?? '',
+    );
+    _maxPriceController = TextEditingController(
+      text: _options.maxPrice?.toString() ?? '',
+    );
+    _minYearController = TextEditingController(
+      text: _options.minYear?.toString() ?? '',
+    );
+    _maxYearController = TextEditingController(
+      text: _options.maxYear?.toString() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _minPriceController.dispose();
+    _maxPriceController.dispose();
+    _minYearController.dispose();
+    _maxYearController.dispose();
+    super.dispose();
+  }
+
+  List<String> get _availableBrands {
+    return widget.cars.map((car) => car.brand).toSet().toList()..sort();
+  }
+
+  List<String> get _availableFuelTypes {
+    return widget.cars
+        .where((car) => car.fuelType != null)
+        .map((car) => car.fuelType!)
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Gelişmiş Arama Seçenekleri',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _resetToDefaults,
+                    child: const Text('Sıfırla'),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Search Fields Section
+                    _buildSection(
+                      'Arama Alanları',
+                      Icons.search,
+                      [
+                        CheckboxListTile(
+                          title: const Text('Marka'),
+                          value: _options.searchInBrand,
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(searchInBrand: value ?? true);
+                          }),
+                        ),
+                        CheckboxListTile(
+                          title: const Text('Model'),
+                          value: _options.searchInModel,
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(searchInModel: value ?? true);
+                          }),
+                        ),
+                        CheckboxListTile(
+                          title: const Text('Yıl'),
+                          value: _options.searchInYear,
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(searchInYear: value ?? true);
+                          }),
+                        ),
+                        CheckboxListTile(
+                          title: const Text('Yakıt Tipi'),
+                          value: _options.searchInFuelType,
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(searchInFuelType: value ?? true);
+                          }),
+                        ),
+                        CheckboxListTile(
+                          title: const Text('Müşteri Bilgileri'),
+                          value: _options.searchInCustomer,
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(searchInCustomer: value ?? true);
+                          }),
+                        ),
+                        CheckboxListTile(
+                          title: const Text('Açıklama'),
+                          value: _options.searchInDescription,
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(searchInDescription: value ?? true);
+                          }),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Filters Section
+                    _buildSection(
+                      'Filtreler',
+                      Icons.filter_list,
+                      [
+                        // Price Range
+                        Text(
+                          'Fiyat Aralığı',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _minPriceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Min Fiyat',
+                                  border: OutlineInputBorder(),
+                                  suffixText: 'TL',
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  final price = double.tryParse(value);
+                                  _options = _options.copyWith(minPrice: price);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextField(
+                                controller: _maxPriceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Max Fiyat',
+                                  border: OutlineInputBorder(),
+                                  suffixText: 'TL',
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  final price = double.tryParse(value);
+                                  _options = _options.copyWith(maxPrice: price);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Year Range
+                        Text(
+                          'Yıl Aralığı',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _minYearController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Min Yıl',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  final year = int.tryParse(value);
+                                  _options = _options.copyWith(minYear: year);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextField(
+                                controller: _maxYearController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Max Yıl',
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  final year = int.tryParse(value);
+                                  _options = _options.copyWith(maxYear: year);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Sold Status
+                        Text(
+                          'Satış Durumu',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<SoldStatus?>(
+                          value: _options.soldStatus,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: null, child: Text('Tüm Araçlar')),
+                            DropdownMenuItem(value: SoldStatus.available, child: Text('Satılık Araçlar')),
+                            DropdownMenuItem(value: SoldStatus.sold, child: Text('Satılan Araçlar')),
+                          ],
+                          onChanged: (value) => setState(() {
+                            _options = _options.copyWith(soldStatus: value);
+                          }),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Brand Filter
+                        Text(
+                          'Markalar',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: _availableBrands.map((brand) {
+                            final isSelected = _options.brands.contains(brand);
+                            return FilterChip(
+                              label: Text(brand),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  final brands = List<String>.from(_options.brands);
+                                  if (selected) {
+                                    brands.add(brand);
+                                  } else {
+                                    brands.remove(brand);
+                                  }
+                                  _options = _options.copyWith(brands: brands);
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Fuel Type Filter
+                        Text(
+                          'Yakıt Tipleri',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: _availableFuelTypes.map((fuelType) {
+                            final isSelected = _options.fuelTypes.contains(fuelType);
+                            return FilterChip(
+                              label: Text(fuelType),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  final fuelTypes = List<String>.from(_options.fuelTypes);
+                                  if (selected) {
+                                    fuelTypes.add(fuelType);
+                                  } else {
+                                    fuelTypes.remove(fuelType);
+                                  }
+                                  _options = _options.copyWith(fuelTypes: fuelTypes);
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Sorting Section
+                    _buildSection(
+                      'Sıralama',
+                      Icons.sort,
+                      [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<SortBy>(
+                                value: _options.sortBy,
+                                decoration: const InputDecoration(
+                                  labelText: 'Sırala',
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: SortBy.addedDate, child: Text('Eklenme Tarihi')),
+                                  DropdownMenuItem(value: SortBy.brand, child: Text('Marka')),
+                                  DropdownMenuItem(value: SortBy.model, child: Text('Model')),
+                                  DropdownMenuItem(value: SortBy.year, child: Text('Yıl')),
+                                  DropdownMenuItem(value: SortBy.price, child: Text('Fiyat')),
+                                  DropdownMenuItem(value: SortBy.soldDate, child: Text('Satış Tarihi')),
+                                ],
+                                onChanged: (value) => setState(() {
+                                  _options = _options.copyWith(sortBy: value ?? SortBy.addedDate);
+                                }),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: DropdownButtonFormField<SortOrder>(
+                                value: _options.sortOrder,
+                                decoration: const InputDecoration(
+                                  labelText: 'Sıra',
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(value: SortOrder.ascending, child: Text('Artan')),
+                                  DropdownMenuItem(value: SortOrder.descending, child: Text('Azalan')),
+                                ],
+                                onChanged: (value) => setState(() {
+                                  _options = _options.copyWith(sortOrder: value ?? SortOrder.descending);
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Actions
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('İPTAL'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, _options),
+                    child: const Text('UYGULA'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(String title, IconData icon, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...children,
       ],
     );
+  }
+
+  void _resetToDefaults() {
+    setState(() {
+      _options = const SearchOptions();
+      _minPriceController.clear();
+      _maxPriceController.clear();
+      _minYearController.clear();
+      _maxYearController.clear();
+    });
   }
 }

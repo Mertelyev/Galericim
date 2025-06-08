@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'db_helper.dart';
+import 'services/logging_service.dart';
 
 class StatisticPage extends StatefulWidget {
   const StatisticPage({super.key});
@@ -10,6 +11,7 @@ class StatisticPage extends StatefulWidget {
 
 class _StatisticPageState extends State<StatisticPage> {
   final dbHelper = DBHelper();
+  final logger = LoggingService();
   int totalCars = 0;
   int soldCars = 0;
   Map<String, int> soldBrandDistribution = {};
@@ -22,9 +24,13 @@ class _StatisticPageState extends State<StatisticPage> {
     super.initState();
     _loadStatistics();
   }
-
   Future<void> _loadStatistics() async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
+      logger.info('Loading statistics from database', tag: 'Statistics');
       final cars = await dbHelper.getCars();
       final soldCarsOnly = cars.where((car) => car.isSold).toList();
 
@@ -33,6 +39,7 @@ class _StatisticPageState extends State<StatisticPage> {
         soldCars = cars.where((car) => car.isSold).length;
 
         // Satılan araçların marka dağılımını hesapla
+        soldBrandDistribution.clear();
         for (var car in cars) {
           if (car.isSold) {
             soldBrandDistribution[car.brand] =
@@ -43,7 +50,7 @@ class _StatisticPageState extends State<StatisticPage> {
         // Yakıt tipi dağılımı hesapla
         fuelTypeDistribution.clear();
         for (var car in soldCarsOnly) {
-          if (car.fuelType != null) {
+          if (car.fuelType != null && car.fuelType!.isNotEmpty) {
             fuelTypeDistribution[car.fuelType!] =
                 (fuelTypeDistribution[car.fuelType!] ?? 0) + 1;
           }
@@ -57,15 +64,45 @@ class _StatisticPageState extends State<StatisticPage> {
                 sum + (double.tryParse(car.price.replaceAll(',', '')) ?? 0),
           );
           averagePrice = totalPrice / soldCarsOnly.length;
+        } else {
+          averagePrice = 0;
         }
 
         isLoading = false;
       });
-    } catch (e) {
-      debugPrint('İstatistikler yüklenirken hata: $e');
+      
+      logger.info('Successfully loaded statistics', tag: 'Statistics', data: {
+        'totalCars': totalCars,
+        'soldCars': soldCars,
+        'brandCount': soldBrandDistribution.length,
+        'fuelTypeCount': fuelTypeDistribution.length,
+        'averagePrice': averagePrice.toStringAsFixed(0),
+      });
+    } catch (e, stackTrace) {
+      logger.error(
+        'Failed to load statistics',
+        tag: 'Statistics',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      
       setState(() {
         isLoading = false;
       });
+      
+      // Show error snackbar if widget is still mounted
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('İstatistikler yüklenirken hata oluştu'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            action: SnackBarAction(
+              label: 'Tekrar Dene',
+              onPressed: _loadStatistics,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -155,11 +192,44 @@ class _StatisticPageState extends State<StatisticPage> {
           ),
           const SizedBox(width: 8),
         ],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadStatistics,
+      ),      body: isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('İstatistikler yükleniyor...'),
+                ],
+              ),
+            )
+          : totalCars == 0
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.bar_chart_outlined,
+                        size: 100,
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Henüz Veri Yok',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'İstatistik görmek için araç ekleyin',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadStatistics,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),

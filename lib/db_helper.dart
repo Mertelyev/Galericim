@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'car.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import 'utils/error_handler.dart' as eh;
 
 class DBHelper {
   static const int _latestVersion = 6; // Version increased
@@ -112,18 +113,21 @@ class DBHelper {
     final version = await db.getVersion();
     debugPrint('Mevcut veritabanı sürümü: $version');
     debugPrint('En son veritabanı sürümü: $_latestVersion');
-  }
-
-  Future<void> insertCar(Car car) async {
-    final db = await database;
-    final id = await db.insert(
-      'cars',
-      car.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    // ID'yi kontrol et
-    if (id <= 0) {
-      throw Exception('Araç eklenirken hata oluştu');
+  }  Future<void> insertCar(Car car) async {
+    try {
+      final db = await database;
+      final id = await db.insert(
+        'cars',
+        car.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      // ID'yi kontrol et
+      if (id <= 0) {
+        throw eh.DatabaseException('Araç eklenirken hata oluştu');
+      }
+    } catch (e, stackTrace) {
+      eh.ErrorHandler.handleError(e, stackTrace, context: 'insertCar');
+      rethrow;
     }
   }
 

@@ -1,4 +1,8 @@
+import 'services/logging_service.dart';
+
 class Car {
+  static final _logger = LoggingService();
+  
   final int? id;
   final String brand;
   final String model;
@@ -95,11 +99,16 @@ class Car {
           : null,
     );
   }
-
   void markAsSold() {
     if (!isSold) {
       isSold = true;
       soldDate = DateTime.now();
+      _logger.info('Car marked as sold', tag: 'Car', data: {
+        'carId': id,
+        'brand': brand,
+        'model': model,
+        'soldDate': soldDate?.toIso8601String(),
+      });
     }
   }
 
@@ -107,6 +116,11 @@ class Car {
     if (isSold) {
       isSold = false;
       soldDate = null;
+      _logger.info('Car marked as unsold', tag: 'Car', data: {
+        'carId': id,
+        'brand': brand,
+        'model': model,
+      });
     }
   }
 }
