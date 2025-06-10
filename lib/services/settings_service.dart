@@ -95,10 +95,16 @@ class SettingsService {
   // Restore settings from map
   static Future<void> restoreSettings(Map<String, dynamic> settings) async {
     if (settings['theme'] != null) await setTheme(settings['theme']);
-    if (settings['autoBackup'] != null) await setAutoBackup(settings['autoBackup']);
-    if (settings['notifications'] != null) await setNotifications(settings['notifications']);
+    if (settings['autoBackup'] != null) {
+      await setAutoBackup(settings['autoBackup']);
+    }
+    if (settings['notifications'] != null) {
+      await setNotifications(settings['notifications']);
+    }
     if (settings['currency'] != null) await setCurrency(settings['currency']);
-    if (settings['dateFormat'] != null) await setDateFormat(settings['dateFormat']);
+    if (settings['dateFormat'] != null) {
+      await setDateFormat(settings['dateFormat']);
+    }
     if (settings['language'] != null) await setLanguage(settings['language']);
   }
 }

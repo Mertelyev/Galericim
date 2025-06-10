@@ -17,7 +17,8 @@ class CarListPage extends StatefulWidget {
 
 class _CarListPageState extends State<CarListPage> {
   final List<Car> cars = [];
-  final dateFormat = DateFormat('dd.MM.yyyy');  final dbHelper = DBHelper();
+  final dateFormat = DateFormat('dd.MM.yyyy');
+  final dbHelper = DBHelper();
   final logger = LoggingService();
   final searchService = SearchService();
   final notificationService = NotificationService();
@@ -65,24 +66,29 @@ class _CarListPageState extends State<CarListPage> {
     }
     return years;
   }
+
   @override
   void initState() {
     super.initState();
     _loadCars();
     _initializeSearchService();
   }
+
   Future<void> _initializeSearchService() async {
     try {
       await searchService.buildIndex();
       logger.info('Search service initialized', tag: 'CarList');
     } catch (e, stackTrace) {
-      logger.error('Failed to initialize search service', tag: 'CarList', error: e, stackTrace: stackTrace);
+      logger.error('Failed to initialize search service',
+          tag: 'CarList', error: e, stackTrace: stackTrace);
     }
-  }  Future<void> _loadCars() async {
+  }
+
+  Future<void> _loadCars() async {
     setState(() {
       isLoading = true;
     });
-    
+
     try {
       logger.info('Loading cars from database', tag: 'CarList');
       final loadedCars = await dbHelper.getCars();
@@ -92,11 +98,12 @@ class _CarListPageState extends State<CarListPage> {
         filteredCars = loadedCars;
         isLoading = false;
       });
-      
+
       // Rebuild search index with new data
       await searchService.buildIndex();
-      
-      logger.info('Successfully loaded ${loadedCars.length} cars', tag: 'CarList');
+
+      logger.info('Successfully loaded ${loadedCars.length} cars',
+          tag: 'CarList');
     } catch (e, stackTrace) {
       logger.error(
         'Failed to load cars',
@@ -104,7 +111,7 @@ class _CarListPageState extends State<CarListPage> {
         error: e,
         stackTrace: stackTrace,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Araçlar yüklenirken hata oluştu: $e')),
@@ -146,9 +153,11 @@ class _CarListPageState extends State<CarListPage> {
         }
         return b.addedDate.compareTo(a.addedDate);
       });
-  }  Future<void> _performSearch(String query) async {
+  }
+
+  Future<void> _performSearch(String query) async {
     if (!mounted) return;
-    
+
     setState(() {
       isLoading = true;
     });
@@ -160,8 +169,9 @@ class _CarListPageState extends State<CarListPage> {
         results = cars;
       } else {
         // Use SearchService for advanced search
-        results = await searchService.search(query, options: _currentSearchOptions);
-        
+        results =
+            await searchService.search(query, options: _currentSearchOptions);
+
         // Log search statistics
         final stats = searchService.getStatistics();
         logger.info('Search performed', tag: 'CarList', data: {
@@ -177,23 +187,25 @@ class _CarListPageState extends State<CarListPage> {
           filteredCars = results;
           isLoading = false;
         });
-          // Show search results notification if it's an actual search
-        if (query.isNotEmpty || _currentSearchOptions != const SearchOptions()) {
+        // Show search results notification if it's an actual search
+        if (query.isNotEmpty ||
+            _currentSearchOptions != const SearchOptions()) {
           notificationService.showSuccess(
             '${results.length} araç bulundu',
           );
         }
       }
     } catch (e, stackTrace) {
-      logger.error('Search failed', tag: 'CarList', error: e, stackTrace: stackTrace);
-      
+      logger.error('Search failed',
+          tag: 'CarList', error: e, stackTrace: stackTrace);
+
       if (mounted) {
         // Fallback to local search on error
         setState(() {
           filteredCars = _fallbackSearch(query);
           isLoading = false;
         });
-          notificationService.showError(
+        notificationService.showError(
           'Arama sırasında hata oluştu',
         );
       }
@@ -202,7 +214,7 @@ class _CarListPageState extends State<CarListPage> {
 
   List<Car> _fallbackSearch(String query) {
     if (query.isEmpty) return cars;
-    
+
     final searchLower = query.toLowerCase().trim();
     return cars.where((car) {
       // Araç bilgileri araması
@@ -228,7 +240,8 @@ class _CarListPageState extends State<CarListPage> {
           customerCityMatch ||
           customerPhoneMatch ||
           customerTcNoMatch;
-    }).toList();  }
+    }).toList();
+  }
 
   void _showAdvancedSearchDialog() async {
     final result = await showDialog<SearchOptions>(
@@ -244,7 +257,7 @@ class _CarListPageState extends State<CarListPage> {
         _currentSearchOptions = result;
         _isAdvancedSearchOpen = true;
       });
-      
+
       // Perform search with new options
       await _performSearch(searchController.text);
     }
@@ -266,7 +279,8 @@ class _CarListPageState extends State<CarListPage> {
                   hintStyle: Theme.of(context).brightness == Brightness.dark
                       ? TextStyle(color: Colors.white.withOpacity(0.7))
                       : TextStyle(color: Colors.black.withOpacity(0.7)),
-                ),                style: Theme.of(context).brightness == Brightness.dark
+                ),
+                style: Theme.of(context).brightness == Brightness.dark
                     ? const TextStyle(color: Colors.white)
                     : const TextStyle(color: Colors.black),
                 onChanged: _performSearch,
@@ -279,23 +293,25 @@ class _CarListPageState extends State<CarListPage> {
           if (isSearching)
             IconButton.outlined(
               icon: const Icon(Icons.close),
-              onPressed: () {              setState(() {
-                isSearching = false;
-                searchController.clear();
-                _currentSearchOptions = const SearchOptions();
-                _isAdvancedSearchOpen = false;
-                filteredCars = cars;
-              });
+              onPressed: () {
+                setState(() {
+                  isSearching = false;
+                  searchController.clear();
+                  _currentSearchOptions = const SearchOptions();
+                  _isAdvancedSearchOpen = false;
+                  filteredCars = cars;
+                });
               },
-            ),          IconButton.outlined(
+            ),
+          IconButton.outlined(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
           ),
           IconButton.outlined(
             icon: Icon(
               Icons.tune,
-              color: _isAdvancedSearchOpen 
-                  ? Theme.of(context).colorScheme.primary 
+              color: _isAdvancedSearchOpen
+                  ? Theme.of(context).colorScheme.primary
                   : null,
             ),
             onPressed: _showAdvancedSearchDialog,
@@ -325,7 +341,8 @@ class _CarListPageState extends State<CarListPage> {
                           ),
                         ],
                       ),
-                    )                  : PaginatedListView(
+                    )
+                  : PaginatedListView(
                       items: _getSortedCars(),
                       itemsPerPage: 15,
                       itemBuilder: (context, index, car) {
@@ -650,7 +667,8 @@ class _CarListPageState extends State<CarListPage> {
     final Map<String, String> formData = {};
 
     showDialog(
-      context: context,      builder: (context) => AlertDialog(
+      context: context,
+      builder: (context) => AlertDialog(
         title: const Text('Satış Durumu Değişikliği'),
         content: ConstrainedBox(
           constraints: BoxConstraints(
@@ -687,7 +705,8 @@ class _CarListPageState extends State<CarListPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('İPTAL'),
-          ),          FilledButton(
+          ),
+          FilledButton(
             onPressed: () async {
               formKey.currentState?.save();
               final navigator = Navigator.of(context);
@@ -810,12 +829,14 @@ class _CarListPageState extends State<CarListPage> {
                       onPressed: () => Navigator.pop(context),
                       child: const Text('İPTAL'),
                     ),
-                    const SizedBox(width: 8),                    FilledButton(
+                    const SizedBox(width: 8),
+                    FilledButton(
                       onPressed: () async {
                         if (formKey.currentState?.validate() ?? false) {
                           formKey.currentState?.save();
                           final navigator = Navigator.of(context);
-                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          final scaffoldMessenger =
+                              ScaffoldMessenger.of(context);
                           await _saveCar(Car(
                             brand: formData['brand'] ?? '',
                             model: formData['model'] ?? '',
@@ -838,7 +859,8 @@ class _CarListPageState extends State<CarListPage> {
                                     : null,
                             fuelType: formData['fuelType']?.isNotEmpty == true
                                 ? formData['fuelType']
-                                : null,                          ));
+                                : null,
+                          ));
                           if (!mounted) return;
                           navigator.pop();
                           scaffoldMessenger.showSnackBar(
@@ -952,7 +974,8 @@ class _CarListPageState extends State<CarListPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton.icon(                      onPressed: () async {
+                    TextButton.icon(
+                      onPressed: () async {
                         final navigator = Navigator.of(context);
                         final confirmed = await showDialog<bool>(
                           context: context,
@@ -971,7 +994,8 @@ class _CarListPageState extends State<CarListPage> {
                               ),
                             ],
                           ),
-                        );                        if (confirmed == true && car.id != null) {
+                        );
+                        if (confirmed == true && car.id != null) {
                           await _deleteCar(car.id!);
                           if (!mounted) return;
                           navigator.pop();
@@ -990,11 +1014,13 @@ class _CarListPageState extends State<CarListPage> {
                           child: const Text('İPTAL'),
                         ),
                         const SizedBox(width: 8),
-                        FilledButton(                          onPressed: () async {
+                        FilledButton(
+                          onPressed: () async {
                             if (formKey.currentState?.validate() ?? false) {
                               formKey.currentState?.save();
                               final navigator = Navigator.of(context);
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              final scaffoldMessenger =
+                                  ScaffoldMessenger.of(context);
                               final updatedCar = Car(
                                 id: car.id,
                                 brand: formData['brand'] ?? car.brand,
@@ -1025,7 +1051,8 @@ class _CarListPageState extends State<CarListPage> {
                                 customerCity: car.customerCity,
                                 customerPhone: car.customerPhone,
                                 customerTcNo: car.customerTcNo,
-                              );                              await _saveCar(updatedCar);
+                              );
+                              await _saveCar(updatedCar);
                               if (!mounted) return;
                               navigator.pop();
                               scaffoldMessenger.showSnackBar(
@@ -1919,7 +1946,8 @@ class _CarListPageState extends State<CarListPage> {
 
   void _showUpdateCustomerDialog(Car car) {
     final formKey = GlobalKey<FormState>();
-    final Map<String, String> formData = {};    showDialog(
+    final Map<String, String> formData = {};
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Müşteri Bilgilerini Güncelle'),
@@ -1967,9 +1995,10 @@ class _CarListPageState extends State<CarListPage> {
                   customerCity: formData['customerCity'],
                   customerPhone: formData['customerPhone'],
                   customerTcNo: formData['customerTcNo'],
-                );                await _saveCar(updatedCar);
+                );
+                await _saveCar(updatedCar);
                 if (!mounted) return;
-                
+
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -2103,7 +2132,8 @@ class _CarListPageState extends State<CarListPage> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
-      ],    );
+      ],
+    );
   }
 }
 
@@ -2186,7 +2216,8 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
                 border: Border(
                   bottom: BorderSide(
                     color: Theme.of(context).dividerColor,
@@ -2228,48 +2259,54 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                           title: const Text('Marka'),
                           value: _options.searchInBrand,
                           onChanged: (value) => setState(() {
-                            _options = _options.copyWith(searchInBrand: value ?? true);
+                            _options =
+                                _options.copyWith(searchInBrand: value ?? true);
                           }),
                         ),
                         CheckboxListTile(
                           title: const Text('Model'),
                           value: _options.searchInModel,
                           onChanged: (value) => setState(() {
-                            _options = _options.copyWith(searchInModel: value ?? true);
+                            _options =
+                                _options.copyWith(searchInModel: value ?? true);
                           }),
                         ),
                         CheckboxListTile(
                           title: const Text('Yıl'),
                           value: _options.searchInYear,
                           onChanged: (value) => setState(() {
-                            _options = _options.copyWith(searchInYear: value ?? true);
+                            _options =
+                                _options.copyWith(searchInYear: value ?? true);
                           }),
                         ),
                         CheckboxListTile(
                           title: const Text('Yakıt Tipi'),
                           value: _options.searchInFuelType,
                           onChanged: (value) => setState(() {
-                            _options = _options.copyWith(searchInFuelType: value ?? true);
+                            _options = _options.copyWith(
+                                searchInFuelType: value ?? true);
                           }),
                         ),
                         CheckboxListTile(
                           title: const Text('Müşteri Bilgileri'),
                           value: _options.searchInCustomer,
                           onChanged: (value) => setState(() {
-                            _options = _options.copyWith(searchInCustomer: value ?? true);
+                            _options = _options.copyWith(
+                                searchInCustomer: value ?? true);
                           }),
                         ),
                         CheckboxListTile(
                           title: const Text('Açıklama'),
                           value: _options.searchInDescription,
                           onChanged: (value) => setState(() {
-                            _options = _options.copyWith(searchInDescription: value ?? true);
+                            _options = _options.copyWith(
+                                searchInDescription: value ?? true);
                           }),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Filters Section
                     _buildSection(
                       'Filtreler',
@@ -2278,9 +2315,10 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                         // Price Range
                         Text(
                           'Fiyat Aralığı',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -2319,13 +2357,14 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Year Range
                         Text(
                           'Yıl Aralığı',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -2362,13 +2401,14 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Sold Status
                         Text(
                           'Satış Durumu',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<SoldStatus?>(
@@ -2377,22 +2417,28 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                             border: OutlineInputBorder(),
                           ),
                           items: const [
-                            DropdownMenuItem(value: null, child: Text('Tüm Araçlar')),
-                            DropdownMenuItem(value: SoldStatus.available, child: Text('Satılık Araçlar')),
-                            DropdownMenuItem(value: SoldStatus.sold, child: Text('Satılan Araçlar')),
+                            DropdownMenuItem(
+                                value: null, child: Text('Tüm Araçlar')),
+                            DropdownMenuItem(
+                                value: SoldStatus.available,
+                                child: Text('Satılık Araçlar')),
+                            DropdownMenuItem(
+                                value: SoldStatus.sold,
+                                child: Text('Satılan Araçlar')),
                           ],
                           onChanged: (value) => setState(() {
                             _options = _options.copyWith(soldStatus: value);
                           }),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Brand Filter
                         Text(
                           'Markalar',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -2404,7 +2450,8 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                               selected: isSelected,
                               onSelected: (selected) {
                                 setState(() {
-                                  final brands = List<String>.from(_options.brands);
+                                  final brands =
+                                      List<String>.from(_options.brands);
                                   if (selected) {
                                     brands.add(brand);
                                   } else {
@@ -2417,31 +2464,35 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                           }).toList(),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Fuel Type Filter
                         Text(
                           'Yakıt Tipleri',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
                           children: _availableFuelTypes.map((fuelType) {
-                            final isSelected = _options.fuelTypes.contains(fuelType);
+                            final isSelected =
+                                _options.fuelTypes.contains(fuelType);
                             return FilterChip(
                               label: Text(fuelType),
                               selected: isSelected,
                               onSelected: (selected) {
                                 setState(() {
-                                  final fuelTypes = List<String>.from(_options.fuelTypes);
+                                  final fuelTypes =
+                                      List<String>.from(_options.fuelTypes);
                                   if (selected) {
                                     fuelTypes.add(fuelType);
                                   } else {
                                     fuelTypes.remove(fuelType);
                                   }
-                                  _options = _options.copyWith(fuelTypes: fuelTypes);
+                                  _options =
+                                      _options.copyWith(fuelTypes: fuelTypes);
                                 });
                               },
                             );
@@ -2450,7 +2501,7 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Sorting Section
                     _buildSection(
                       'Sıralama',
@@ -2466,15 +2517,27 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                                   border: OutlineInputBorder(),
                                 ),
                                 items: const [
-                                  DropdownMenuItem(value: SortBy.addedDate, child: Text('Eklenme Tarihi')),
-                                  DropdownMenuItem(value: SortBy.brand, child: Text('Marka')),
-                                  DropdownMenuItem(value: SortBy.model, child: Text('Model')),
-                                  DropdownMenuItem(value: SortBy.year, child: Text('Yıl')),
-                                  DropdownMenuItem(value: SortBy.price, child: Text('Fiyat')),
-                                  DropdownMenuItem(value: SortBy.soldDate, child: Text('Satış Tarihi')),
+                                  DropdownMenuItem(
+                                      value: SortBy.addedDate,
+                                      child: Text('Eklenme Tarihi')),
+                                  DropdownMenuItem(
+                                      value: SortBy.brand,
+                                      child: Text('Marka')),
+                                  DropdownMenuItem(
+                                      value: SortBy.model,
+                                      child: Text('Model')),
+                                  DropdownMenuItem(
+                                      value: SortBy.year, child: Text('Yıl')),
+                                  DropdownMenuItem(
+                                      value: SortBy.price,
+                                      child: Text('Fiyat')),
+                                  DropdownMenuItem(
+                                      value: SortBy.soldDate,
+                                      child: Text('Satış Tarihi')),
                                 ],
                                 onChanged: (value) => setState(() {
-                                  _options = _options.copyWith(sortBy: value ?? SortBy.addedDate);
+                                  _options = _options.copyWith(
+                                      sortBy: value ?? SortBy.addedDate);
                                 }),
                               ),
                             ),
@@ -2487,11 +2550,16 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
                                   border: OutlineInputBorder(),
                                 ),
                                 items: const [
-                                  DropdownMenuItem(value: SortOrder.ascending, child: Text('Artan')),
-                                  DropdownMenuItem(value: SortOrder.descending, child: Text('Azalan')),
+                                  DropdownMenuItem(
+                                      value: SortOrder.ascending,
+                                      child: Text('Artan')),
+                                  DropdownMenuItem(
+                                      value: SortOrder.descending,
+                                      child: Text('Azalan')),
                                 ],
                                 onChanged: (value) => setState(() {
-                                  _options = _options.copyWith(sortOrder: value ?? SortOrder.descending);
+                                  _options = _options.copyWith(
+                                      sortOrder: value ?? SortOrder.descending);
                                 }),
                               ),
                             ),
@@ -2508,7 +2576,8 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(20)),
                 border: Border(
                   top: BorderSide(
                     color: Theme.of(context).dividerColor,
@@ -2551,8 +2620,8 @@ class _AdvancedSearchDialogState extends State<_AdvancedSearchDialog> {
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ],
         ),

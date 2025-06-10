@@ -98,7 +98,8 @@ class _CarFormState extends State<CarForm> {
 
             if (day == null || month == null || year == null) {
               return 'Geçerli bir tarih giriniz';
-            }            final date = DateTime(year, month, day);
+            }
+            final date = DateTime(year, month, day);
 
             // Tarih geçerliliği kontrolü
             if (date.month != month || date.day != day || date.year != year) {
@@ -109,7 +110,8 @@ class _CarFormState extends State<CarForm> {
               return 'Gelecek tarih girilemez';
             }
 
-            if (year < 2000 || year > DateTime.now().year + (allowFutureDate ? 10 : 0)) {
+            if (year < 2000 ||
+                year > DateTime.now().year + (allowFutureDate ? 10 : 0)) {
               return '2000-${DateTime.now().year + (allowFutureDate ? 10 : 0)} arası bir yıl giriniz';
             }
           } catch (e) {
@@ -184,7 +186,8 @@ class _CarFormState extends State<CarForm> {
                 fieldKey: 'year',
                 icon: Icons.calendar_today,
                 initialValue: widget.car?.year,
-                keyboardType: TextInputType.number,                validator: ValidationUtils.validateYear,
+                keyboardType: TextInputType.number,
+                validator: ValidationUtils.validateYear,
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -193,7 +196,8 @@ class _CarFormState extends State<CarForm> {
                 icon: Icons.speed,
                 initialValue: widget.car?.kilometers,
                 keyboardType: TextInputType.number,
-                hintText: 'Örn: 125000',                validator: ValidationUtils.validateKilometers,
+                hintText: 'Örn: 125000',
+                validator: ValidationUtils.validateKilometers,
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -201,7 +205,8 @@ class _CarFormState extends State<CarForm> {
                 fieldKey: 'price',
                 icon: Icons.attach_money,
                 initialValue: widget.car?.price,
-                keyboardType: TextInputType.number,                validator: ValidationUtils.validatePrice,
+                keyboardType: TextInputType.number,
+                validator: ValidationUtils.validatePrice,
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -280,7 +285,8 @@ class _CarFormState extends State<CarForm> {
                 label: 'Şehir',
                 fieldKey: 'customerCity',
                 icon: Icons.location_city,
-              ),              const SizedBox(height: 8),
+              ),
+              const SizedBox(height: 8),
               _buildTextField(
                 label: 'Telefon',
                 fieldKey: 'customerPhone',

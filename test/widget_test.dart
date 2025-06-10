@@ -7,7 +7,8 @@ import 'package:galericim/car.dart';
 
 void main() {
   group('Basic Widget Tests', () {
-    testWidgets('Car model can be created and used', (WidgetTester tester) async {
+    testWidgets('Car model can be created and used',
+        (WidgetTester tester) async {
       final car = Car(
         id: 1,
         brand: 'Toyota',
@@ -27,7 +28,8 @@ void main() {
       expect(car.brand, equals('Toyota'));
       expect(car.model, equals('Corolla'));
       expect(car.year, equals('2020'));
-      expect(car.isSold, equals(false));    });
+      expect(car.isSold, equals(false));
+    });
 
     testWidgets('Basic widget can be created', (WidgetTester tester) async {
       await tester.pumpWidget(

@@ -13,11 +13,11 @@ import './services/logging_service.dart';
 
 void main() async {
   final logger = LoggingService();
-  
+
   try {
     logger.info('Application starting up');
     WidgetsFlutterBinding.ensureInitialized(); // Flutter binding'i başlat
-    
+
     // Web platformunda SQLite'ı başlat
     if (kIsWeb) {
       logger.info('Initializing database for web platform');
@@ -43,7 +43,8 @@ void main() async {
       ),
     );
   } catch (e, stackTrace) {
-    logger.error('Failed to initialize application', error: e, stackTrace: stackTrace);
+    logger.error('Failed to initialize application',
+        error: e, stackTrace: stackTrace);
     // Still try to run the app with default theme
     runApp(
       ChangeNotifierProvider(

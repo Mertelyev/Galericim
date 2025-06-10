@@ -5,24 +5,25 @@ void main() {
   group('ErrorHandler Tests', () {
     test('should handle general exceptions without throwing', () {
       final exception = Exception('Test exception');
-      
+
       expect(() => ErrorHandler.handleError(exception, null), returnsNormally);
     });
 
     test('should handle DatabaseException without throwing', () {
       final exception = DatabaseException('Database connection failed');
-      
+
       expect(() => ErrorHandler.handleError(exception, null), returnsNormally);
     });
 
     test('should handle ValidationException without throwing', () {
       final exception = ValidationException('Invalid input data');
-      
+
       expect(() => ErrorHandler.handleError(exception, null), returnsNormally);
     });
 
     test('should handle unknown error types without throwing', () {
-      expect(() => ErrorHandler.handleError('String error', null), returnsNormally);
+      expect(() => ErrorHandler.handleError('String error', null),
+          returnsNormally);
     });
 
     test('should handle null errors without throwing', () {
@@ -31,36 +32,44 @@ void main() {
 
     test('should handle errors with context', () {
       final exception = Exception('Test exception');
-      
-      expect(() => ErrorHandler.handleError(
-        exception, 
-        null, 
-        context: 'Test context'
-      ), returnsNormally);
+
+      expect(
+          () => ErrorHandler.handleError(exception, null,
+              context: 'Test context'),
+          returnsNormally);
     });
 
     test('should get user friendly message for database errors', () {
-      final message = ErrorHandler.getUserFriendlyMessage('database connection failed');
-      
-      expect(message, equals('Veritabanı hatası oluştu. Lütfen uygulamayı yeniden başlatın.'));
+      final message =
+          ErrorHandler.getUserFriendlyMessage('database connection failed');
+
+      expect(
+          message,
+          equals(
+              'Veritabanı hatası oluştu. Lütfen uygulamayı yeniden başlatın.'));
     });
 
     test('should get user friendly message for network errors', () {
       final message = ErrorHandler.getUserFriendlyMessage('network timeout');
-      
-      expect(message, equals('İnternet bağlantısı sorunu. Lütfen bağlantınızı kontrol edin.'));
+
+      expect(
+          message,
+          equals(
+              'İnternet bağlantısı sorunu. Lütfen bağlantınızı kontrol edin.'));
     });
 
     test('should get user friendly message for permission errors', () {
       final message = ErrorHandler.getUserFriendlyMessage('permission denied');
-      
-      expect(message, equals('İzin hatası. Lütfen uygulama ayarlarını kontrol edin.'));
+
+      expect(message,
+          equals('İzin hatası. Lütfen uygulama ayarlarını kontrol edin.'));
     });
 
     test('should get default user friendly message for unknown errors', () {
       final message = ErrorHandler.getUserFriendlyMessage('unknown error');
-      
-      expect(message, equals('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'));
+
+      expect(message,
+          equals('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'));
     });
   });
 
@@ -99,7 +108,8 @@ void main() {
 
     test('should create ValidationException with field errors', () {
       final fieldErrors = {'field1': 'Error 1', 'field2': 'Error 2'};
-      final exception = ValidationException('Test validation error', fieldErrors);
+      final exception =
+          ValidationException('Test validation error', fieldErrors);
 
       expect(exception.message, equals('Test validation error'));
       expect(exception.fieldErrors, equals(fieldErrors));

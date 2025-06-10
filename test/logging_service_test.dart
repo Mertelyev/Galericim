@@ -90,7 +90,8 @@ void main() {
           logs[1].timestamp.isBefore(logs[2].timestamp) ||
               logs[1].timestamp.isAtSameMomentAs(logs[2].timestamp),
           isTrue);
-    });    test('should filter logs by level', () {
+    });
+    test('should filter logs by level', () {
       logger.debug('Debug message');
       logger.info('Info message');
       logger.warning('Warning message');
@@ -103,7 +104,8 @@ void main() {
 
       final warningLogs = logger.getLogs(minLevel: LogLevel.warning);
       expect(warningLogs.length, equals(3)); // warning + error + critical
-      expect(warningLogs.any((log) => log.message == 'Warning message'), isTrue);
+      expect(
+          warningLogs.any((log) => log.message == 'Warning message'), isTrue);
     });
 
     test('should clear logs', () {

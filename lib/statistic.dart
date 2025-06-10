@@ -24,6 +24,7 @@ class _StatisticPageState extends State<StatisticPage> {
     super.initState();
     _loadStatistics();
   }
+
   Future<void> _loadStatistics() async {
     setState(() {
       isLoading = true;
@@ -70,7 +71,7 @@ class _StatisticPageState extends State<StatisticPage> {
 
         isLoading = false;
       });
-      
+
       logger.info('Successfully loaded statistics', tag: 'Statistics', data: {
         'totalCars': totalCars,
         'soldCars': soldCars,
@@ -85,11 +86,11 @@ class _StatisticPageState extends State<StatisticPage> {
         error: e,
         stackTrace: stackTrace,
       );
-      
+
       setState(() {
         isLoading = false;
       });
-      
+
       // Show error snackbar if widget is still mounted
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -192,7 +193,8 @@ class _StatisticPageState extends State<StatisticPage> {
           ),
           const SizedBox(width: 8),
         ],
-      ),      body: isLoading
+      ),
+      body: isLoading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -211,7 +213,10 @@ class _StatisticPageState extends State<StatisticPage> {
                       Icon(
                         Icons.bar_chart_outlined,
                         size: 100,
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.5),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -222,7 +227,9 @@ class _StatisticPageState extends State<StatisticPage> {
                       Text(
                         'İstatistik görmek için araç ekleyin',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                       ),
                     ],
@@ -230,240 +237,249 @@ class _StatisticPageState extends State<StatisticPage> {
                 )
               : RefreshIndicator(
                   onRefresh: _loadStatistics,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // İstatistik kartları - Tek satırda
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withOpacity(0.2),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: IntrinsicHeight(
-                          child: Row(
-                            children: [
-                              // Toplam Araç
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.directions_car,
-                                      size: 24,
-                                      color: dynamicColor,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // İstatistik kartları - Tek satırda
+                        Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withOpacity(0.2),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  // Toplam Araç
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.directions_car,
+                                          size: 24,
+                                          color: dynamicColor,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          totalCars.toString(),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Toplam',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      totalCars.toString(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
+                                  ),
+                                  VerticalDivider(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant,
+                                  ),
+                                  // Stokta
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.inventory_2,
+                                          size: 24,
+                                          color: dynamicColor,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          (totalCars - soldCars).toString(),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Stokta',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                        if (totalCars > 0)
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(top: 4),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  dynamicColor.withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              '%${(((totalCars - soldCars) / totalCars) * 100).round()}',
+                                              style: TextStyle(
+                                                color: dynamicColor,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
                                           ),
+                                      ],
                                     ),
-                                    Text(
-                                      'Toplam',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                  ),
+                                  VerticalDivider(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant,
+                                  ),
+                                  // Satılan
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.sell,
+                                          size: 24,
+                                          color: dynamicColor,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          soldCars.toString(),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Satılan',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                        if (totalCars > 0)
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(top: 4),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  dynamicColor.withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              '%${((soldCars / totalCars) * 100).round()}',
+                                              style: TextStyle(
+                                                color: dynamicColor,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
                                           ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                              VerticalDivider(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant,
-                              ),
-                              // Stokta
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.inventory_2,
-                                      size: 24,
-                                      color: dynamicColor,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      (totalCars - soldCars).toString(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    Text(
-                                      'Stokta',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                    if (totalCars > 0)
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 4),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: dynamicColor.withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          '%${(((totalCars - soldCars) / totalCars) * 100).round()}',
-                                          style: TextStyle(
-                                            color: dynamicColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              VerticalDivider(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant,
-                              ),
-                              // Satılan
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.sell,
-                                      size: 24,
-                                      color: dynamicColor,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      soldCars.toString(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    Text(
-                                      'Satılan',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                    if (totalCars > 0)
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 4),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: dynamicColor.withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          '%${((soldCars / totalCars) * 100).round()}',
-                                          style: TextStyle(
-                                            color: dynamicColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
 
-                    // Marka Dağılımı
-                    if (soldBrandDistribution.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        'Satış Dağılımı',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                        // Marka Dağılımı
+                        if (soldBrandDistribution.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'Satış Dağılımı',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildDetailCard(
+                            title: 'Markalar',
+                            icon: Icons.pie_chart,
+                            children:
+                                _calculatePercentages(soldBrandDistribution)
+                                    .map((item) => _buildDistributionRow(
+                                          item['name'] as String,
+                                          item['percentage'] as int,
+                                          item['count'] as int,
+                                        ))
+                                    .toList(),
+                          ),
+                        ],
+
+                        if (fuelTypeDistribution.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          _buildDetailCard(
+                            title: 'Yakıt Tipi Dağılımı',
+                            icon: Icons.local_gas_station,
+                            children:
+                                _calculatePercentages(fuelTypeDistribution)
+                                    .map((item) => _buildDistributionRow(
+                                          item['name'] as String,
+                                          item['percentage'] as int,
+                                          item['count'] as int,
+                                        ))
+                                    .toList(),
+                          ),
+                        ],
+
+                        const SizedBox(height: 24),
+                        _buildDetailCard(
+                          title: 'Satış İstatistikleri',
+                          icon: Icons.analytics,
+                          children: [
+                            _buildInfoRow(
+                              'Ortalama Satış Fiyatı',
+                              '${averagePrice.toStringAsFixed(0)} TL',
                             ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailCard(
-                        title: 'Markalar',
-                        icon: Icons.pie_chart,
-                        children: _calculatePercentages(soldBrandDistribution)
-                            .map((item) => _buildDistributionRow(
-                                  item['name'] as String,
-                                  item['percentage'] as int,
-                                  item['count'] as int,
-                                ))
-                            .toList(),
-                      ),
-                    ],
-
-                    if (fuelTypeDistribution.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      _buildDetailCard(
-                        title: 'Yakıt Tipi Dağılımı',
-                        icon: Icons.local_gas_station,
-                        children: _calculatePercentages(fuelTypeDistribution)
-                            .map((item) => _buildDistributionRow(
-                                  item['name'] as String,
-                                  item['percentage'] as int,
-                                  item['count'] as int,
-                                ))
-                            .toList(),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-                    _buildDetailCard(
-                      title: 'Satış İstatistikleri',
-                      icon: Icons.analytics,
-                      children: [
-                        _buildInfoRow(
-                          'Ortalama Satış Fiyatı',
-                          '${averagePrice.toStringAsFixed(0)} TL',
+                            // Daha fazla istatistik eklenebilir
+                          ],
                         ),
-                        // Daha fazla istatistik eklenebilir
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
     );
   }
 

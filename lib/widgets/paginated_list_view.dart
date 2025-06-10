@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 class PaginatedListView extends StatefulWidget {
   final List<dynamic> items;
-  final Widget Function(BuildContext context, int index, dynamic item) itemBuilder;
+  final Widget Function(BuildContext context, int index, dynamic item)
+      itemBuilder;
   final int itemsPerPage;
   final Widget? loadingWidget;
   final Widget? emptyWidget;
@@ -38,7 +39,7 @@ class _PaginatedListViewState extends State<PaginatedListView> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= 
+    if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       _loadMore();
     }
@@ -46,10 +47,10 @@ class _PaginatedListViewState extends State<PaginatedListView> {
 
   void _loadMore() {
     if (_isLoadingMore) return;
-    
+
     final totalItems = widget.items.length;
     final maxPages = (totalItems / widget.itemsPerPage).ceil();
-    
+
     if (_currentPage >= maxPages) return;
 
     setState(() {
@@ -92,8 +93,7 @@ class _PaginatedListViewState extends State<PaginatedListView> {
         if (_isLoadingMore)
           Padding(
             padding: const EdgeInsets.all(16),
-            child: widget.loadingWidget ?? 
-                   const CircularProgressIndicator(),
+            child: widget.loadingWidget ?? const CircularProgressIndicator(),
           ),
       ],
     );

@@ -36,7 +36,7 @@ class _TrendsPageState extends State<TrendsPage> {
         cars = loadedCars;
         isLoading = false;
       });
-      
+
       logger.info('Successfully loaded trends data', tag: 'Trends', data: {
         'totalCars': loadedCars.length,
         'soldCars': loadedCars.where((car) => car.isSold).length,
@@ -48,12 +48,13 @@ class _TrendsPageState extends State<TrendsPage> {
         error: e,
         stackTrace: stackTrace,
       );
-      
+
       setState(() {
         isLoading = false;
-        errorMessage = 'Trend verileri yüklenirken hata oluştu: ${e.toString()}';
+        errorMessage =
+            'Trend verileri yüklenirken hata oluştu: ${e.toString()}';
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -188,7 +189,7 @@ class _TrendsPageState extends State<TrendsPage> {
 
   Widget _buildMonthlySalesChart() {
     final monthlySales = _getMonthlySalesData();
-    
+
     if (monthlySales.isEmpty) {
       return Card(
         child: Padding(
@@ -212,8 +213,10 @@ class _TrendsPageState extends State<TrendsPage> {
       );
     }
 
-    final maxCount = monthlySales.map((e) => e['count'] as int).reduce((a, b) => a > b ? a : b);
-    
+    final maxCount = monthlySales
+        .map((e) => e['count'] as int)
+        .reduce((a, b) => a > b ? a : b);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -223,9 +226,11 @@ class _TrendsPageState extends State<TrendsPage> {
             Text(
               'Aylık Satışlar',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,                  ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-            const SizedBox(height: 16),            SizedBox(
+            const SizedBox(height: 16),
+            SizedBox(
               height: 220,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -245,7 +250,7 @@ class _TrendsPageState extends State<TrendsPage> {
 
   Widget _buildBarChart(Map<String, dynamic> data, int maxCount) {
     final height = (data['count'] as int) / maxCount * 150;
-    
+
     return Container(
       width: 60,
       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -276,7 +281,7 @@ class _TrendsPageState extends State<TrendsPage> {
 
   Widget _buildTopBrandsChart() {
     final brandData = _getBrandSalesData();
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -299,8 +304,9 @@ class _TrendsPageState extends State<TrendsPage> {
 
   Widget _buildBrandItem(Map<String, dynamic> brand) {
     final totalSold = cars.where((car) => car.isSold).length;
-    final percentage = totalSold > 0 ? (brand['count'] / totalSold * 100).round() : 0;
-    
+    final percentage =
+        totalSold > 0 ? (brand['count'] / totalSold * 100).round() : 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -327,7 +333,7 @@ class _TrendsPageState extends State<TrendsPage> {
 
   Widget _buildAveragePriceChart() {
     final averagePrice = _getAveragePrice();
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -354,10 +360,11 @@ class _TrendsPageState extends State<TrendsPage> {
                   children: [
                     Text(
                       '${averagePrice.toStringAsFixed(0)} TL',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                     ),
                     Text(
                       'Ortalama Fiyat',
@@ -376,23 +383,34 @@ class _TrendsPageState extends State<TrendsPage> {
   }
 
   List<Map<String, dynamic>> monthlySales = [];
-  
+
   List<Map<String, dynamic>> _getMonthlySalesData() {
     if (monthlySales.isNotEmpty) return monthlySales;
-    
-    final soldCars = cars.where((car) => car.isSold && car.soldDate != null).toList();
+
+    final soldCars =
+        cars.where((car) => car.isSold && car.soldDate != null).toList();
     final monthNames = [
-      'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
-      'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'
+      'Oca',
+      'Şub',
+      'Mar',
+      'Nis',
+      'May',
+      'Haz',
+      'Tem',
+      'Ağu',
+      'Eyl',
+      'Eki',
+      'Kas',
+      'Ara'
     ];
-    
+
     final monthCounts = <int, int>{};
-    
+
     for (final car in soldCars) {
       final month = car.soldDate!.month;
       monthCounts[month] = (monthCounts[month] ?? 0) + 1;
     }
-    
+
     monthlySales = List.generate(12, (index) {
       final month = index + 1;
       return {
@@ -400,34 +418,36 @@ class _TrendsPageState extends State<TrendsPage> {
         'count': monthCounts[month] ?? 0,
       };
     }).where((data) => (data['count'] as int) > 0).toList();
-    
+
     return monthlySales;
   }
 
   List<Map<String, dynamic>> _getBrandSalesData() {
     final soldCars = cars.where((car) => car.isSold).toList();
     final brandCounts = <String, int>{};
-    
+
     for (final car in soldCars) {
       brandCounts[car.brand] = (brandCounts[car.brand] ?? 0) + 1;
     }
-    
+
     final sortedBrands = brandCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
-    return sortedBrands.map((entry) => {
-      'brand': entry.key,
-      'count': entry.value,
-    }).toList();
+
+    return sortedBrands
+        .map((entry) => {
+              'brand': entry.key,
+              'count': entry.value,
+            })
+        .toList();
   }
 
   double _getAveragePrice() {
     final soldCars = cars.where((car) => car.isSold).toList();
     if (soldCars.isEmpty) return 0;
-    
+
     double total = 0;
     int count = 0;
-    
+
     for (final car in soldCars) {
       final price = double.tryParse(car.price.replaceAll(',', ''));
       if (price != null) {
@@ -435,7 +455,7 @@ class _TrendsPageState extends State<TrendsPage> {
         count++;
       }
     }
-    
+
     return count > 0 ? total / count : 0;
   }
 }

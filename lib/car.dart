@@ -2,7 +2,7 @@ import 'services/logging_service.dart';
 
 class Car {
   static final _logger = LoggingService();
-  
+
   final int? id;
   final String brand;
   final String model;

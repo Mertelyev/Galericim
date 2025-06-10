@@ -113,7 +113,9 @@ class DBHelper {
     final version = await db.getVersion();
     debugPrint('Mevcut veritabanı sürümü: $version');
     debugPrint('En son veritabanı sürümü: $_latestVersion');
-  }  Future<void> insertCar(Car car) async {
+  }
+
+  Future<void> insertCar(Car car) async {
     try {
       final db = await database;
       final id = await db.insert(

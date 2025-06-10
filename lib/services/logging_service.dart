@@ -107,9 +107,9 @@ class LoggingService {
     final timestamp = entry.timestamp.toString().substring(0, 19);
     final levelStr = entry.level.name.toUpperCase().padRight(8);
     final tag = entry.tag.padRight(12);
-    
+
     final message = '[$timestamp] $levelStr $tag: ${entry.message}';
-    
+
     switch (entry.level) {
       case LogLevel.debug:
         developer.log(message, name: entry.tag, level: 500);
@@ -137,7 +137,8 @@ class LoggingService {
     }
   }
 
-  void _reportCriticalError(LogEntry entry) {    // In a real app, you would integrate with services like:
+  void _reportCriticalError(LogEntry entry) {
+    // In a real app, you would integrate with services like:
     // - Firebase Crashlytics
     // - Sentry
     // - Bugsnag
@@ -154,7 +155,7 @@ class LoggingService {
   // Get logs for debugging or support
   List<LogEntry> getLogs({LogLevel? minLevel}) {
     if (minLevel == null) return List.unmodifiable(_logs);
-    
+
     final minLevelIndex = LogLevel.values.indexOf(minLevel);
     return _logs
         .where((log) => LogLevel.values.indexOf(log.level) >= minLevelIndex)
@@ -170,17 +171,17 @@ class LoggingService {
   String exportLogsAsText({LogLevel? minLevel}) {
     final logs = getLogs(minLevel: minLevel);
     final buffer = StringBuffer();
-    
+
     buffer.writeln('Galericim App Logs');
     buffer.writeln('Generated: ${DateTime.now()}');
     buffer.writeln('Total entries: ${logs.length}');
     buffer.writeln('=' * 50);
-    
+
     for (final log in logs) {
       buffer.writeln(log.toString());
       buffer.writeln('-' * 30);
     }
-    
+
     return buffer.toString();
   }
 }
@@ -207,22 +208,23 @@ class LogEntry {
   @override
   String toString() {
     final buffer = StringBuffer();
-    buffer.writeln('[${timestamp.toString().substring(0, 19)}] ${level.name.toUpperCase()} $tag');
+    buffer.writeln(
+        '[${timestamp.toString().substring(0, 19)}] ${level.name.toUpperCase()} $tag');
     buffer.writeln('Message: $message');
-    
+
     if (error != null) {
       buffer.writeln('Error: $error');
     }
-    
+
     if (data != null) {
       buffer.writeln('Data: $data');
     }
-    
+
     if (stackTrace != null) {
       buffer.writeln('Stack Trace:');
       buffer.writeln(stackTrace.toString());
     }
-    
+
     return buffer.toString();
   }
 }

@@ -13,10 +13,10 @@ class BackupService {
   static Future<Map<String, dynamic>> createBackup() async {
     try {
       _logger.info('Creating backup', tag: 'Backup');
-      
+
       final dbHelper = DBHelper();
       final cars = await dbHelper.getCars();
-      
+
       final backup = {
         'version': '1.0.0',
         'timestamp': DateTime.now().toIso8601String(),
@@ -30,15 +30,16 @@ class BackupService {
           'createdBy': 'Galericim App',
         }
       };
-      
+
       _logger.info('Backup created successfully', tag: 'Backup', data: {
         'totalCars': cars.length,
         'timestamp': backup['timestamp'],
       });
-      
+
       return backup;
     } catch (e, stackTrace) {
-      _logger.error('Failed to create backup', tag: 'Backup', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to create backup',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -50,7 +51,8 @@ class BackupService {
       const encoder = JsonEncoder.withIndent('  ');
       return encoder.convert(backup);
     } catch (e, stackTrace) {
-      _logger.error('Failed to export backup as JSON', tag: 'Backup', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to export backup as JSON',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -62,7 +64,8 @@ class BackupService {
       await Clipboard.setData(ClipboardData(text: jsonString));
       _logger.info('Backup copied to clipboard', tag: 'Backup');
     } catch (e, stackTrace) {
-      _logger.error('Failed to copy backup to clipboard', tag: 'Backup', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to copy backup to clipboard',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -75,26 +78,31 @@ class BackupService {
           !backupData.containsKey('timestamp') ||
           !backupData.containsKey('data') ||
           !backupData.containsKey('totalCars')) {
-        _logger.warning('Backup validation failed: Missing required fields', tag: 'Backup');
+        _logger.warning('Backup validation failed: Missing required fields',
+            tag: 'Backup');
         return false;
       }
 
       final data = backupData['data'] as Map<String, dynamic>?;
       if (data == null || !data.containsKey('cars')) {
-        _logger.warning('Backup validation failed: Missing cars data', tag: 'Backup');
+        _logger.warning('Backup validation failed: Missing cars data',
+            tag: 'Backup');
         return false;
       }
 
       final cars = data['cars'] as List?;
       if (cars == null) {
-        _logger.warning('Backup validation failed: Cars data is not a list', tag: 'Backup');
+        _logger.warning('Backup validation failed: Cars data is not a list',
+            tag: 'Backup');
         return false;
       }
 
       // Validate each car data structure
       for (final carData in cars) {
         if (carData is! Map<String, dynamic>) {
-          _logger.warning('Backup validation failed: Invalid car data structure', tag: 'Backup');
+          _logger.warning(
+              'Backup validation failed: Invalid car data structure',
+              tag: 'Backup');
           return false;
         }
 
@@ -102,7 +110,9 @@ class BackupService {
         final requiredFields = ['brand', 'model', 'year', 'price', 'addedDate'];
         for (final field in requiredFields) {
           if (!carData.containsKey(field)) {
-            _logger.warning('Backup validation failed: Missing car field: $field', tag: 'Backup');
+            _logger.warning(
+                'Backup validation failed: Missing car field: $field',
+                tag: 'Backup');
             return false;
           }
         }
@@ -112,10 +122,11 @@ class BackupService {
         'totalCars': cars.length,
         'version': backupData['version'],
       });
-      
+
       return true;
     } catch (e, stackTrace) {
-      _logger.error('Backup validation error', tag: 'Backup', error: e, stackTrace: stackTrace);
+      _logger.error('Backup validation error',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -137,7 +148,7 @@ class BackupService {
       final dbHelper = DBHelper();
       final data = backupData['data'] as Map<String, dynamic>;
       final carsData = data['cars'] as List;
-      
+
       int restoredCount = 0;
       int skippedCount = 0;
       int errorCount = 0;
@@ -156,7 +167,7 @@ class BackupService {
       for (final carData in carsData) {
         try {
           final car = Car.fromMap(carData as Map<String, dynamic>);
-          
+
           if (mode == RestoreMode.merge) {
             // Check if car already exists (by brand, model, year combination)
             final existingCars = await dbHelper.getCars();
@@ -165,7 +176,7 @@ class BackupService {
                 existing.model == car.model &&
                 existing.year == car.year &&
                 existing.addedDate.isAtSameMomentAs(car.addedDate));
-            
+
             if (exists) {
               skippedCount++;
               continue;
@@ -197,8 +208,10 @@ class BackupService {
           await dbHelper.insertCar(newCar);
           restoredCount++;
         } catch (e) {
-          errorCount++;        errors.add('Failed to restore car: $e');
-          _logger.warning('Failed to restore individual car', tag: 'Backup', data: {'error': e.toString()});
+          errorCount++;
+          errors.add('Failed to restore car: $e');
+          _logger.warning('Failed to restore individual car',
+              tag: 'Backup', data: {'error': e.toString()});
         }
       }
 
@@ -220,8 +233,9 @@ class BackupService {
 
       return result;
     } catch (e, stackTrace) {
-      _logger.error('Restore failed', tag: 'Backup', error: e, stackTrace: stackTrace);
-      
+      _logger.error('Restore failed',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
+
       return RestoreResult(
         success: false,
         restoredCount: 0,
@@ -242,8 +256,9 @@ class BackupService {
       final backupData = jsonDecode(jsonString) as Map<String, dynamic>;
       return await restoreFromBackup(backupData, mode: mode);
     } catch (e, stackTrace) {
-      _logger.error('Failed to parse backup JSON', tag: 'Backup', error: e, stackTrace: stackTrace);
-      
+      _logger.error('Failed to parse backup JSON',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
+
       return RestoreResult(
         success: false,
         restoredCount: 0,
@@ -259,14 +274,16 @@ class BackupService {
   static Map<String, dynamic>? getBackupMetadata(String jsonString) {
     try {
       final backupData = jsonDecode(jsonString) as Map<String, dynamic>;
-      
+
       return {
         'version': backupData['version'],
         'timestamp': backupData['timestamp'],
         'totalCars': backupData['totalCars'],
         'metadata': backupData['metadata'],
-      };    } catch (e) {
-      _logger.warning('Failed to get backup metadata', tag: 'Backup', data: {'error': e.toString()});
+      };
+    } catch (e) {
+      _logger.warning('Failed to get backup metadata',
+          tag: 'Backup', data: {'error': e.toString()});
       return null;
     }
   }
@@ -276,27 +293,29 @@ class BackupService {
     try {
       final backup = await createBackup();
       final timestamp = DateTime.now();
-      final filename = 'galericim_backup_${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}${timestamp.minute.toString().padLeft(2, '0')}.json';
-      
+      final filename =
+          'galericim_backup_${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}${timestamp.minute.toString().padLeft(2, '0')}.json';
+
       const encoder = JsonEncoder.withIndent('  ');
       final jsonString = encoder.convert(backup);
-      
+
       _logger.info('Created timestamped backup', tag: 'Backup', data: {
         'filename': filename,
         'size': jsonString.length,
       });
-      
+
       return jsonString;
     } catch (e, stackTrace) {
-      _logger.error('Failed to create timestamped backup', tag: 'Backup', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to create timestamped backup',
+          tag: 'Backup', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
 }
 
 enum RestoreMode {
-  merge,     // Add new cars, skip existing ones
-  replace,   // Clear all data and restore from backup
+  merge, // Add new cars, skip existing ones
+  replace, // Clear all data and restore from backup
 }
 
 class RestoreResult {
@@ -320,26 +339,26 @@ class RestoreResult {
     if (!success) {
       return 'Yedekleme geri yükleme başarısız: ${errors.first}';
     }
-    
+
     String summary = '$restoredCount araç başarıyla geri yüklendi';
-    
+
     if (skippedCount > 0) {
       summary += ', $skippedCount araç zaten mevcut (atlandı)';
     }
-    
+
     if (errorCount > 0) {
       summary += ', $errorCount hata oluştu';
     }
-    
+
     return summary;
   }
 }
 
 class BackupException implements Exception {
   final String message;
-  
+
   const BackupException(this.message);
-  
+
   @override
   String toString() => 'BackupException: $message';
 }

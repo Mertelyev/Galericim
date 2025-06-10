@@ -60,7 +60,8 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(
         title: const Text('Ayarlar'),
       ),
-      body: ListView(        children: [
+      body: ListView(
+        children: [
           const SizedBox(height: 16),
           Consumer<ThemeProvider>(
             builder: (context, provider, child) {
@@ -79,8 +80,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               );
             },
-          ),          const Divider(),
-          
+          ),
+          const Divider(),
+
           // Backup & Restore Section
           ListTile(
             leading: Icon(
@@ -89,14 +91,16 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             title: const Text('Veri Yedekleme'),
             subtitle: const Text('Tüm araç verilerini yedekle'),
-            trailing: isBackingUp ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ) : null,
+            trailing: isBackingUp
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
             onTap: isBackingUp ? null : _createBackup,
           ),
-          
+
           ListTile(
             leading: Icon(
               Icons.restore,
@@ -104,16 +108,18 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             title: const Text('Veri Geri Yükleme'),
             subtitle: const Text('Yedek dosyasından veri geri yükle'),
-            trailing: isRestoring ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ) : null,
+            trailing: isRestoring
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
             onTap: isRestoring ? null : _showRestoreDialog,
           ),
-          
+
           const Divider(),
-          
+
           // Data Export Section
           ListTile(
             leading: Icon(
@@ -122,14 +128,16 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             title: const Text('Verileri Dışa Aktar'),
             subtitle: const Text('Araç verilerini CSV formatında dışa aktar'),
-            trailing: isExporting ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ) : null,
+            trailing: isExporting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
             onTap: isExporting ? null : _exportDataToCsv,
           ),
-          
+
           ListTile(
             leading: Icon(
               Icons.analytics,
@@ -139,7 +147,7 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('İstatistik raporunu panoya kopyala'),
             onTap: _exportStatisticsReport,
           ),
-          
+
           ListTile(
             leading: Icon(
               Icons.bug_report,
@@ -149,9 +157,9 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('Uygulama loglarını görüntüle'),
             onTap: _showLogDialog,
           ),
-          
+
           const Divider(),
-          
+
           ListTile(
             leading: Icon(
               Icons.info_outline,
@@ -175,13 +183,14 @@ class _SettingsPageState extends State<SettingsPage> {
       logger.info('Starting data export to CSV', tag: 'Settings');
       final cars = await dbHelper.getCars();
       final csvContent = DataExportService.exportToCsv(cars);
-      
+
       await DataExportService.copyToClipboard(csvContent);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${cars.length} araç verisi panoya kopyalandı (CSV format)'),
+            content: Text(
+                '${cars.length} araç verisi panoya kopyalandı (CSV format)'),
             backgroundColor: Theme.of(context).colorScheme.secondary,
             action: SnackBarAction(
               label: 'Tamam',
@@ -190,11 +199,13 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
       }
-      
-      logger.info('Successfully exported ${cars.length} cars to CSV', tag: 'Settings');
+
+      logger.info('Successfully exported ${cars.length} cars to CSV',
+          tag: 'Settings');
     } catch (e, stackTrace) {
-      logger.error('Failed to export data to CSV', tag: 'Settings', error: e, stackTrace: stackTrace);
-      
+      logger.error('Failed to export data to CSV',
+          tag: 'Settings', error: e, stackTrace: stackTrace);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -215,9 +226,9 @@ class _SettingsPageState extends State<SettingsPage> {
       logger.info('Exporting statistics report', tag: 'Settings');
       final cars = await dbHelper.getCars();
       final reportContent = DataExportService.generateStatisticsSummary(cars);
-      
+
       await DataExportService.copyToClipboard(reportContent);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -226,11 +237,12 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
       }
-      
+
       logger.info('Successfully exported statistics report', tag: 'Settings');
     } catch (e, stackTrace) {
-      logger.error('Failed to export statistics report', tag: 'Settings', error: e, stackTrace: stackTrace);
-      
+      logger.error('Failed to export statistics report',
+          tag: 'Settings', error: e, stackTrace: stackTrace);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -244,7 +256,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showLogDialog() {
     final logs = logger.getLogs(minLevel: LogLevel.warning);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -320,7 +332,8 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () {
-              final logText = logger.exportLogsAsText(minLevel: LogLevel.warning);
+              final logText =
+                  logger.exportLogsAsText(minLevel: LogLevel.warning);
               DataExportService.copyToClipboard(logText);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Loglar panoya kopyalandı')),
@@ -351,6 +364,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return Colors.purple;
     }
   }
+
   void _showAboutDialog() {
     showAboutDialog(
       context: context,
@@ -374,6 +388,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ],
     );
   }
+
   Future<void> _createBackup() async {
     setState(() {
       isBackingUp = true;
@@ -382,20 +397,21 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       logger.info('Starting backup creation', tag: 'Settings');
       final backupData = await BackupService.exportBackupAsJson();
-      
+
       await Clipboard.setData(ClipboardData(text: backupData));
-      
+
       if (mounted) {
         notificationService.showSuccess(
           'Yedek verisi panoya kopyalandı. Güvenli bir yere kaydedin.',
           title: 'Yedekleme Başarılı',
         );
       }
-      
+
       logger.info('Backup creation completed successfully', tag: 'Settings');
     } catch (e, stackTrace) {
-      logger.error('Failed to create backup', tag: 'Settings', error: e, stackTrace: stackTrace);
-      
+      logger.error('Failed to create backup',
+          tag: 'Settings', error: e, stackTrace: stackTrace);
+
       if (mounted) {
         notificationService.showError(
           'Yedek oluşturulurken hata oluştu: $e',
@@ -489,7 +505,8 @@ class _RestoreDialogState extends State<_RestoreDialog> {
                   groupValue: _selectedMode,
                   onChanged: (value) => setState(() => _selectedMode = value!),
                   title: const Text('Birleştir'),
-                  subtitle: const Text('Mevcut verilerle birleştir (kopyalar atlanır)'),
+                  subtitle: const Text(
+                      'Mevcut verilerle birleştir (kopyalar atlanır)'),
                   dense: true,
                 ),
                 RadioListTile<RestoreMode>(
@@ -497,7 +514,8 @@ class _RestoreDialogState extends State<_RestoreDialog> {
                   groupValue: _selectedMode,
                   onChanged: (value) => setState(() => _selectedMode = value!),
                   title: const Text('Değiştir'),
-                  subtitle: const Text('Tüm mevcut verileri sil ve yedekten geri yükle'),
+                  subtitle: const Text(
+                      'Tüm mevcut verileri sil ve yedekten geri yükle'),
                   dense: true,
                 ),
               ],
@@ -523,6 +541,7 @@ class _RestoreDialogState extends State<_RestoreDialog> {
       ],
     );
   }
+
   Future<void> _performRestore() async {
     if (_controller.text.trim().isEmpty) {
       widget.notificationService.showWarning(
@@ -541,8 +560,9 @@ class _RestoreDialogState extends State<_RestoreDialog> {
       });
 
       // Parse JSON string to Map
-      final Map<String, dynamic> backupData = jsonDecode(_controller.text.trim());
-      
+      final Map<String, dynamic> backupData =
+          jsonDecode(_controller.text.trim());
+
       final result = await BackupService.restoreFromBackup(
         backupData,
         mode: _selectedMode,
@@ -550,7 +570,7 @@ class _RestoreDialogState extends State<_RestoreDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        
+
         final message = _selectedMode == RestoreMode.merge
             ? 'Geri yükleme tamamlandı!\n\n'
                 'Eklenen: ${result.restoredCount}\n'
@@ -566,14 +586,17 @@ class _RestoreDialogState extends State<_RestoreDialog> {
         );
       }
 
-      widget.logger.info('Data restoration completed successfully', tag: 'Settings', data: {
-        'restoredCount': result.restoredCount,
-        'skippedCount': result.skippedCount,
-        'errorCount': result.errorCount,
-      });
+      widget.logger.info('Data restoration completed successfully',
+          tag: 'Settings',
+          data: {
+            'restoredCount': result.restoredCount,
+            'skippedCount': result.skippedCount,
+            'errorCount': result.errorCount,
+          });
     } catch (e, stackTrace) {
-      widget.logger.error('Failed to restore data', tag: 'Settings', error: e, stackTrace: stackTrace);
-      
+      widget.logger.error('Failed to restore data',
+          tag: 'Settings', error: e, stackTrace: stackTrace);
+
       if (mounted) {
         Navigator.pop(context);
         widget.notificationService.showError(

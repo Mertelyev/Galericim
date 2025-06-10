@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 class ErrorHandler {
-  static void handleError(dynamic error, StackTrace? stackTrace, {
+  static void handleError(
+    dynamic error,
+    StackTrace? stackTrace, {
     String? context,
     bool showToUser = false,
   }) {
@@ -11,10 +13,10 @@ class ErrorHandler {
       if (context != null) debugPrint('📍 Context: $context');
       if (stackTrace != null) debugPrint('📚 Stack trace: $stackTrace');
     }
-    
+
     // Üretim modunda hataları log servisine gönder
     // TODO: Implement logging service for production
-    
+
     // Kritik hatalar için kullanıcıya bildirim göster
     if (showToUser) {
       // TODO: Show user-friendly error message
@@ -37,9 +39,9 @@ class ErrorHandler {
 class DatabaseException implements Exception {
   final String message;
   final dynamic originalError;
-  
+
   DatabaseException(this.message, [this.originalError]);
-  
+
   @override
   String toString() => 'DatabaseException: $message';
 }
@@ -47,9 +49,9 @@ class DatabaseException implements Exception {
 class ValidationException implements Exception {
   final String message;
   final Map<String, String>? fieldErrors;
-  
+
   ValidationException(this.message, [this.fieldErrors]);
-  
+
   @override
   String toString() => 'ValidationException: $message';
 }

@@ -18,7 +18,7 @@ class SearchService {
   final Map<String, Set<int>> _transmissionIndex = {};
   final Map<String, Set<int>> _customerIndex = {};
   final Map<String, Set<int>> _descriptionIndex = {};
-  
+
   final Map<int, Car> _carCache = {};
   bool _isIndexed = false;
   DateTime? _lastIndexUpdate;
@@ -28,22 +28,22 @@ class SearchService {
     try {
       _logger.info('Building search index', tag: 'Search');
       final stopwatch = Stopwatch()..start();
-      
+
       // Clear existing indices
       _clearIndices();
-      
+
       final dbHelper = DBHelper();
       final cars = await dbHelper.getCars();
-      
+
       for (final car in cars) {
         if (car.id != null) {
           _indexCar(car);
         }
       }
-      
+
       _isIndexed = true;
       _lastIndexUpdate = DateTime.now();
-      
+
       stopwatch.stop();
       _logger.info('Search index built successfully', tag: 'Search', data: {
         'totalCars': cars.length,
@@ -51,7 +51,8 @@ class SearchService {
         'indexSize': _carCache.length,
       });
     } catch (e, stackTrace) {
-      _logger.error('Failed to build search index', tag: 'Search', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to build search index',
+          tag: 'Search', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -94,14 +95,15 @@ class SearchService {
   }
 
   /// Performs a comprehensive search across all indexed fields
-  Future<List<Car>> search(String query, {
+  Future<List<Car>> search(
+    String query, {
     SearchOptions? options,
   }) async {
     try {
       if (!_isIndexed) {
         await buildIndex();
       }
-      
+
       if (query.isEmpty) {
         return _getAllCars(options);
       }
@@ -117,35 +119,35 @@ class SearchService {
 
       // Search in different fields based on options
       final searchOptions = options ?? const SearchOptions();
-      
+
       if (searchOptions.searchInBrand) {
         matchingCarIds.addAll(_searchInIndex(_brandIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInModel) {
         matchingCarIds.addAll(_searchInIndex(_modelIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInYear) {
         matchingCarIds.addAll(_searchInIndex(_yearIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInFuelType) {
         matchingCarIds.addAll(_searchInIndex(_fuelTypeIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInColor) {
         matchingCarIds.addAll(_searchInIndex(_colorIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInTransmission) {
         matchingCarIds.addAll(_searchInIndex(_transmissionIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInCustomer) {
         matchingCarIds.addAll(_searchInIndex(_customerIndex, searchTerms));
       }
-      
+
       if (searchOptions.searchInDescription) {
         matchingCarIds.addAll(_searchInIndex(_descriptionIndex, searchTerms));
       }
@@ -158,7 +160,8 @@ class SearchService {
           .toList();
 
       results = _applyFilters(results, searchOptions);
-      results = _sortResults(results, searchOptions.sortBy, searchOptions.sortOrder);
+      results =
+          _sortResults(results, searchOptions.sortBy, searchOptions.sortOrder);
 
       stopwatch.stop();
       _logger.info('Search completed', tag: 'Search', data: {
@@ -169,7 +172,8 @@ class SearchService {
 
       return results;
     } catch (e, stackTrace) {
-      _logger.error('Search failed', tag: 'Search', error: e, stackTrace: stackTrace);
+      _logger.error('Search failed',
+          tag: 'Search', error: e, stackTrace: stackTrace);
       return [];
     }
   }
@@ -201,7 +205,7 @@ class SearchService {
       }
 
       final result = suggestions.take(limit).toList()..sort();
-      
+
       _logger.debug('Quick search completed', tag: 'Search', data: {
         'query': query,
         'suggestionCount': result.length,
@@ -209,7 +213,8 @@ class SearchService {
 
       return result;
     } catch (e, stackTrace) {
-      _logger.error('Quick search failed', tag: 'Search', error: e, stackTrace: stackTrace);
+      _logger.error('Quick search failed',
+          tag: 'Search', error: e, stackTrace: stackTrace);
       return [];
     }
   }
@@ -254,28 +259,29 @@ class SearchService {
 
     // Index brand
     _addToIndex(_brandIndex, _normalizeText(car.brand), car.id!);
-    
+
     // Index model
     _addToIndex(_modelIndex, _normalizeText(car.model), car.id!);
-    
+
     // Index year
     _addToIndex(_yearIndex, car.year, car.id!);
-    
+
     // Index fuel type
     if (car.fuelType != null) {
       _addToIndex(_fuelTypeIndex, _normalizeText(car.fuelType!), car.id!);
     }
-    
+
     // Index color
     if (car.color != null) {
       _addToIndex(_colorIndex, _normalizeText(car.color!), car.id!);
     }
-    
+
     // Index transmission
     if (car.transmission != null) {
-      _addToIndex(_transmissionIndex, _normalizeText(car.transmission!), car.id!);
+      _addToIndex(
+          _transmissionIndex, _normalizeText(car.transmission!), car.id!);
     }
-    
+
     // Index customer info
     if (car.customerName != null) {
       _addToIndex(_customerIndex, _normalizeText(car.customerName!), car.id!);
@@ -283,12 +289,13 @@ class SearchService {
     if (car.customerCity != null) {
       _addToIndex(_customerIndex, _normalizeText(car.customerCity!), car.id!);
     }
-    
+
     // Index description
     if (car.description != null) {
       final words = _normalizeText(car.description!).split(' ');
       for (final word in words) {
-        if (word.length > 2) { // Only index words longer than 2 characters
+        if (word.length > 2) {
+          // Only index words longer than 2 characters
           _addToIndex(_descriptionIndex, word, car.id!);
         }
       }
@@ -301,7 +308,7 @@ class SearchService {
     _removeFromIndex(_brandIndex, _normalizeText(car.brand), car.id!);
     _removeFromIndex(_modelIndex, _normalizeText(car.model), car.id!);
     _removeFromIndex(_yearIndex, car.year, car.id!);
-    
+
     if (car.fuelType != null) {
       _removeFromIndex(_fuelTypeIndex, _normalizeText(car.fuelType!), car.id!);
     }
@@ -309,13 +316,16 @@ class SearchService {
       _removeFromIndex(_colorIndex, _normalizeText(car.color!), car.id!);
     }
     if (car.transmission != null) {
-      _removeFromIndex(_transmissionIndex, _normalizeText(car.transmission!), car.id!);
+      _removeFromIndex(
+          _transmissionIndex, _normalizeText(car.transmission!), car.id!);
     }
     if (car.customerName != null) {
-      _removeFromIndex(_customerIndex, _normalizeText(car.customerName!), car.id!);
+      _removeFromIndex(
+          _customerIndex, _normalizeText(car.customerName!), car.id!);
     }
     if (car.customerCity != null) {
-      _removeFromIndex(_customerIndex, _normalizeText(car.customerCity!), car.id!);
+      _removeFromIndex(
+          _customerIndex, _normalizeText(car.customerCity!), car.id!);
     }
     if (car.description != null) {
       final words = _normalizeText(car.description!).split(' ');
@@ -339,7 +349,8 @@ class SearchService {
   }
 
   String _normalizeText(String text) {
-    return text.toLowerCase()
+    return text
+        .toLowerCase()
         .replaceAll('ğ', 'g')
         .replaceAll('ü', 'u')
         .replaceAll('ş', 's')
@@ -356,9 +367,10 @@ class SearchService {
         .toList();
   }
 
-  Set<int> _searchInIndex(Map<String, Set<int>> index, List<String> searchTerms) {
+  Set<int> _searchInIndex(
+      Map<String, Set<int>> index, List<String> searchTerms) {
     final results = <int>{};
-    
+
     for (final term in searchTerms) {
       for (final key in index.keys) {
         if (key.contains(term)) {
@@ -366,18 +378,18 @@ class SearchService {
         }
       }
     }
-    
+
     return results;
   }
 
   List<Car> _getAllCars(SearchOptions? options) {
     List<Car> results = _carCache.values.toList();
-    
+
     if (options != null) {
       results = _applyFilters(results, options);
       results = _sortResults(results, options.sortBy, options.sortOrder);
     }
-    
+
     return results;
   }
 
@@ -385,44 +397,48 @@ class SearchService {
     return cars.where((car) {
       // Price range filter
       if (options.minPrice != null) {
-        final price = double.tryParse(car.price.replaceAll(RegExp(r'[^\d.]'), ''));
+        final price =
+            double.tryParse(car.price.replaceAll(RegExp(r'[^\d.]'), ''));
         if (price == null || price < options.minPrice!) return false;
       }
-      
+
       if (options.maxPrice != null) {
-        final price = double.tryParse(car.price.replaceAll(RegExp(r'[^\d.]'), ''));
+        final price =
+            double.tryParse(car.price.replaceAll(RegExp(r'[^\d.]'), ''));
         if (price == null || price > options.maxPrice!) return false;
       }
-      
+
       // Year range filter
       if (options.minYear != null) {
         final year = int.tryParse(car.year);
         if (year == null || year < options.minYear!) return false;
       }
-      
+
       if (options.maxYear != null) {
         final year = int.tryParse(car.year);
         if (year == null || year > options.maxYear!) return false;
       }
-      
+
       // Sold status filter
       if (options.soldStatus != null) {
         if (options.soldStatus == SoldStatus.sold && !car.isSold) return false;
-        if (options.soldStatus == SoldStatus.available && car.isSold) return false;
+        if (options.soldStatus == SoldStatus.available && car.isSold) {
+          return false;
+        }
       }
-      
+
       // Fuel type filter
       if (options.fuelTypes.isNotEmpty) {
         if (car.fuelType == null || !options.fuelTypes.contains(car.fuelType)) {
           return false;
         }
       }
-      
+
       // Brand filter
       if (options.brands.isNotEmpty) {
         if (!options.brands.contains(car.brand)) return false;
       }
-      
+
       return true;
     }).toList();
   }
@@ -430,7 +446,7 @@ class SearchService {
   List<Car> _sortResults(List<Car> cars, SortBy sortBy, SortOrder sortOrder) {
     cars.sort((a, b) {
       int comparison = 0;
-      
+
       switch (sortBy) {
         case SortBy.brand:
           comparison = a.brand.compareTo(b.brand);
@@ -442,13 +458,16 @@ class SearchService {
           comparison = int.parse(a.year).compareTo(int.parse(b.year));
           break;
         case SortBy.price:
-          final priceA = double.tryParse(a.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-          final priceB = double.tryParse(b.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+          final priceA =
+              double.tryParse(a.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+          final priceB =
+              double.tryParse(b.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
           comparison = priceA.compareTo(priceB);
           break;
         case SortBy.addedDate:
           comparison = a.addedDate.compareTo(b.addedDate);
-          break;        case SortBy.soldDate:
+          break;
+        case SortBy.soldDate:
           if (a.soldDate == null && b.soldDate == null) {
             comparison = 0;
           } else if (a.soldDate == null) {
@@ -460,10 +479,10 @@ class SearchService {
           }
           break;
       }
-      
+
       return sortOrder == SortOrder.ascending ? comparison : -comparison;
     });
-    
+
     return cars;
   }
 }
@@ -477,7 +496,7 @@ class SearchOptions {
   final bool searchInTransmission;
   final bool searchInCustomer;
   final bool searchInDescription;
-  
+
   final double? minPrice;
   final double? maxPrice;
   final int? minYear;
@@ -485,7 +504,7 @@ class SearchOptions {
   final SoldStatus? soldStatus;
   final List<String> fuelTypes;
   final List<String> brands;
-  
+
   final SortBy sortBy;
   final SortOrder sortOrder;
   const SearchOptions({
@@ -555,7 +574,9 @@ class SearchOptions {
 }
 
 enum SoldStatus { all, sold, available }
+
 enum SortBy { brand, model, year, price, addedDate, soldDate }
+
 enum SortOrder { ascending, descending }
 
 class SearchStatistics {

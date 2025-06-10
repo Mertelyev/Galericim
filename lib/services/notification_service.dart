@@ -9,10 +9,11 @@ class NotificationService {
   NotificationService._internal();
 
   final List<AppNotification> _notifications = [];
-  final StreamController<List<AppNotification>> _notificationController = 
+  final StreamController<List<AppNotification>> _notificationController =
       StreamController<List<AppNotification>>.broadcast();
 
-  Stream<List<AppNotification>> get notificationStream => _notificationController.stream;
+  Stream<List<AppNotification>> get notificationStream =>
+      _notificationController.stream;
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
@@ -77,7 +78,8 @@ class NotificationService {
   }
 
   /// Shows a car-related notification
-  void showCarNotification(String message, NotificationType type, {String? carInfo}) {
+  void showCarNotification(String message, NotificationType type,
+      {String? carInfo}) {
     _addNotification(AppNotification(
       id: _generateId(),
       type: type,
@@ -136,7 +138,7 @@ class NotificationService {
 
   /// Shows a Flutter SnackBar notification
   void showSnackBar(
-    BuildContext context, 
+    BuildContext context,
     String message, {
     NotificationType type = NotificationType.info,
     Duration duration = const Duration(seconds: 4),
@@ -144,7 +146,7 @@ class NotificationService {
   }) {
     try {
       final color = _getColorForType(type, Theme.of(context));
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -160,7 +162,8 @@ class NotificationService {
         'type': type.toString(),
       });
     } catch (e, stackTrace) {
-      _logger.error('Failed to show SnackBar', tag: 'Notification', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to show SnackBar',
+          tag: 'Notification', error: e, stackTrace: stackTrace);
     }
   }
 
@@ -173,12 +176,13 @@ class NotificationService {
     List<AlertAction>? actions,
   }) async {
     try {
-      final defaultActions = actions ?? [
-        AlertAction(
-          label: 'Tamam',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ];
+      final defaultActions = actions ??
+          [
+            AlertAction(
+              label: 'Tamam',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ];
 
       await showDialog<void>(
         context: context,
@@ -186,10 +190,12 @@ class NotificationService {
           icon: _getIconForType(type),
           title: Text(title),
           content: Text(message),
-          actions: defaultActions.map((action) => TextButton(
-            onPressed: action.onPressed,
-            child: Text(action.label),
-          )).toList(),
+          actions: defaultActions
+              .map((action) => TextButton(
+                    onPressed: action.onPressed,
+                    child: Text(action.label),
+                  ))
+              .toList(),
         ),
       );
 
@@ -199,7 +205,8 @@ class NotificationService {
         'type': type.toString(),
       });
     } catch (e, stackTrace) {
-      _logger.error('Failed to show alert dialog', tag: 'Notification', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to show alert dialog',
+          tag: 'Notification', error: e, stackTrace: stackTrace);
     }
   }
 
@@ -239,7 +246,8 @@ class NotificationService {
 
       return result ?? false;
     } catch (e, stackTrace) {
-      _logger.error('Failed to show confirmation dialog', tag: 'Notification', error: e, stackTrace: stackTrace);
+      _logger.error('Failed to show confirmation dialog',
+          tag: 'Notification', error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -250,7 +258,7 @@ class NotificationService {
     if (index != -1) {
       _notifications[index] = _notifications[index].copyWith(isRead: true);
       _notificationController.add(_notifications);
-      
+
       _logger.debug('Notification marked as read', tag: 'Notification', data: {
         'notificationId': notificationId,
       });
@@ -263,7 +271,7 @@ class NotificationService {
       _notifications[i] = _notifications[i].copyWith(isRead: true);
     }
     _notificationController.add(_notifications);
-    
+
     _logger.info('All notifications marked as read', tag: 'Notification');
   }
 
@@ -271,7 +279,7 @@ class NotificationService {
   void removeNotification(String notificationId) {
     _notifications.removeWhere((n) => n.id == notificationId);
     _notificationController.add(_notifications);
-    
+
     _logger.debug('Notification removed', tag: 'Notification', data: {
       'notificationId': notificationId,
     });
@@ -281,7 +289,7 @@ class NotificationService {
   void clearAll() {
     _notifications.clear();
     _notificationController.add(_notifications);
-    
+
     _logger.info('All notifications cleared', tag: 'Notification');
   }
 
@@ -289,8 +297,9 @@ class NotificationService {
   void clearByCategory(NotificationCategory category) {
     _notifications.removeWhere((n) => n.category == category);
     _notificationController.add(_notifications);
-    
-    _logger.debug('Notifications cleared by category', tag: 'Notification', data: {
+
+    _logger
+        .debug('Notifications cleared by category', tag: 'Notification', data: {
       'category': category.toString(),
     });
   }
@@ -320,21 +329,21 @@ class NotificationService {
 
   void _addNotification(AppNotification notification) {
     _notifications.insert(0, notification);
-    
+
     // Limit number of notifications to prevent memory issues
     if (_notifications.length > 100) {
       _notifications.removeRange(100, _notifications.length);
     }
-    
+
     _notificationController.add(_notifications);
-    
+
     // Auto-remove if duration is set
     if (notification.duration != null) {
       Timer(notification.duration!, () {
         removeNotification(notification.id);
       });
     }
-    
+
     _logger.debug('Notification added', tag: 'Notification', data: {
       'id': notification.id,
       'type': notification.type.toString(),
