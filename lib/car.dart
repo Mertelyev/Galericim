@@ -6,7 +6,7 @@ class Car {
   final int? id;
   final String brand;
   final String model;
-  final String? package; // Yeni eklenen paket bilgisi
+  final String? package;
   final String year;
   final String price;
   final DateTime addedDate;
@@ -28,7 +28,7 @@ class Car {
     this.id,
     required this.brand,
     required this.model,
-    this.package, // Opsiyonel paket bilgisi
+    this.package,
     required this.year,
     required this.price,
     required this.addedDate,

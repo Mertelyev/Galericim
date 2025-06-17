@@ -64,9 +64,8 @@ void main() {
       expect(ValidationUtils.validateKilometers('-100'),
           equals('Kilometre en az 0 olmalıdır'));
     });
-
     test('validateKilometers should return null for valid kilometers', () {
-      expect(ValidationUtils.validateKilometers(''), isNull); // Optional field
+      expect(ValidationUtils.validateKilometers(''), isNull);
       expect(ValidationUtils.validateKilometers('0'), isNull);
       expect(ValidationUtils.validateKilometers('50000'), isNull);
       expect(ValidationUtils.validateKilometers('150000'), isNull);
@@ -76,18 +75,16 @@ void main() {
           equals('Geçerli bir telefon numarası giriniz'));
       expect(ValidationUtils.validatePhone('123'),
           equals('Geçerli bir telefon numarası giriniz'));
-      expect(
-          ValidationUtils.validatePhone('051234567890'), // 11 haneli
+      expect(ValidationUtils.validatePhone('051234567890'),
           equals('Geçerli bir telefon numarası giriniz'));
-      expect(
-          ValidationUtils.validatePhone('04123456789'), // 4 ile başlayan
+      expect(ValidationUtils.validatePhone('04123456789'),
           equals('Geçerli bir telefon numarası giriniz'));
     });
     test('validatePhone should return null for valid Turkish phone', () {
-      expect(ValidationUtils.validatePhone('05123456789'), isNull); // 10 haneli
+      expect(ValidationUtils.validatePhone('05123456789'), isNull);
       expect(ValidationUtils.validatePhone('05323456789'), isNull);
       expect(ValidationUtils.validatePhone('05523456789'), isNull);
-      expect(ValidationUtils.validatePhone('+905123456789'), isNull); // +90 ile
+      expect(ValidationUtils.validatePhone('+905123456789'), isNull);
     });
 
     test('validatePhone should return null for empty phone (optional)', () {
@@ -100,14 +97,13 @@ void main() {
       expect(ValidationUtils.validateTcNo('123'),
           equals('TC Kimlik No 11 haneli olmalıdır'));
       expect(ValidationUtils.validateTcNo('12345678901'),
-          equals('Geçersiz TC Kimlik No')); // Invalid algorithm
+          equals('Geçersiz TC Kimlik No'));
       expect(ValidationUtils.validateTcNo('01234567890'),
-          equals('Geçerli bir TC Kimlik No giriniz')); // Starts with 0
+          equals('Geçerli bir TC Kimlik No giriniz'));
     });
     test('validateTcNo should return null for valid TC number', () {
-      // Bu test için TC No algoritmasını basit tutuyoruz
       expect(ValidationUtils.validateTcNo('12345678901'),
-          equals('Geçersiz TC Kimlik No')); // Invalid test
+          equals('Geçersiz TC Kimlik No'));
     });
 
     test('validateTcNo should return null for empty TC (optional field)', () {

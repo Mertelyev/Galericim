@@ -6,10 +6,9 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'utils/error_handler.dart' as eh;
 
 class DBHelper {
-  static const int _latestVersion = 6; // Version increased
+  static const int _latestVersion = 6;
   static const String _tableName = 'cars';
 
-  // Veritabanı şema değişikliklerini takip eden map
   static final Map<int, List<String>> _migrations = {
     1: [
       '''CREATE TABLE $_tableName (

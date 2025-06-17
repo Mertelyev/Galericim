@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Tarih formatlaması için eklendi
+import 'package:intl/intl.dart';
 import 'db_helper.dart';
 import 'car.dart';
 import 'widgets/car_form.dart';
@@ -26,18 +26,15 @@ class _CarListPageState extends State<CarListPage> {
   bool isLoading = true;
   bool isSearching = false;
   final searchController = TextEditingController();
-
-  // Advanced search options
   SearchOptions _currentSearchOptions = const SearchOptions();
   bool _isAdvancedSearchOpen = false;
 
-  // Filtreleme seçenekleri için
   String? selectedBrand;
   String? selectedYear;
   RangeValues? priceRange;
   bool showOnlySoldCars = false;
-  bool showOnlyInStock = false; // Yeni eklenen değişken
-  String? selectedFuelType; // Yeni değişken ekle
+  bool showOnlyInStock = false;
+  String? selectedFuelType;
   DateTime? selectedStartDate;
   DateTime? selectedEndDate;
   String? selectedMonth;
@@ -93,13 +90,12 @@ class _CarListPageState extends State<CarListPage> {
       logger.info('Loading cars from database', tag: 'CarList');
       final loadedCars = await dbHelper.getCars();
       setState(() {
-        cars.clear(); // Önceki araçları temizle
+        cars.clear();
         cars.addAll(loadedCars);
         filteredCars = loadedCars;
         isLoading = false;
       });
 
-      // Rebuild search index with new data
       await searchService.buildIndex();
 
       logger.info('Successfully loaded ${loadedCars.length} cars',
@@ -130,7 +126,7 @@ class _CarListPageState extends State<CarListPage> {
       } else {
         await dbHelper.updateCar(car);
       }
-      await _loadCars(); // Listeyi yenile
+      await _loadCars();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -146,7 +142,6 @@ class _CarListPageState extends State<CarListPage> {
   }
 
   List<Car> _getSortedCars() {
-    // Filtrelenmiş listeyi kullan
     return [...filteredCars]..sort((a, b) {
         if (a.isSold != b.isSold) {
           return a.isSold ? 1 : -1;
@@ -165,14 +160,11 @@ class _CarListPageState extends State<CarListPage> {
     try {
       List<Car> results;
       if (query.isEmpty && _currentSearchOptions == const SearchOptions()) {
-        // No search query and default options - show all cars
         results = cars;
       } else {
-        // Use SearchService for advanced search
         results =
             await searchService.search(query, options: _currentSearchOptions);
 
-        // Log search statistics
         final stats = searchService.getStatistics();
         logger.info('Search performed', tag: 'CarList', data: {
           'query': query,
@@ -187,7 +179,6 @@ class _CarListPageState extends State<CarListPage> {
           filteredCars = results;
           isLoading = false;
         });
-        // Show search results notification if it's an actual search
         if (query.isNotEmpty ||
             _currentSearchOptions != const SearchOptions()) {
           notificationService.showSuccess(
@@ -198,9 +189,7 @@ class _CarListPageState extends State<CarListPage> {
     } catch (e, stackTrace) {
       logger.error('Search failed',
           tag: 'CarList', error: e, stackTrace: stackTrace);
-
       if (mounted) {
-        // Fallback to local search on error
         setState(() {
           filteredCars = _fallbackSearch(query);
           isLoading = false;
@@ -214,16 +203,13 @@ class _CarListPageState extends State<CarListPage> {
 
   List<Car> _fallbackSearch(String query) {
     if (query.isEmpty) return cars;
-
     final searchLower = query.toLowerCase().trim();
     return cars.where((car) {
-      // Araç bilgileri araması
       final brandMatch = car.brand.toLowerCase().contains(searchLower);
       final modelMatch = car.model.toLowerCase().contains(searchLower);
       final packageMatch =
           car.package?.toLowerCase().contains(searchLower) ?? false;
 
-      // Müşteri bilgileri araması
       final customerNameMatch =
           car.customerName?.toLowerCase().contains(searchLower) ?? false;
       final customerCityMatch =
@@ -258,7 +244,6 @@ class _CarListPageState extends State<CarListPage> {
         _isAdvancedSearchOpen = true;
       });
 
-      // Perform search with new options
       await _performSearch(searchController.text);
     }
   }
@@ -273,8 +258,7 @@ class _CarListPageState extends State<CarListPage> {
                 controller: searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText:
-                      'Araç veya müşteri bilgilerinde ara...', // Hint text güncellendi
+                  hintText: 'Araç veya müşteri bilgilerinde ara...',
                   border: InputBorder.none,
                   hintStyle: Theme.of(context).brightness == Brightness.dark
                       ? TextStyle(color: Colors.white.withOpacity(0.7))
@@ -370,7 +354,6 @@ class _CarListPageState extends State<CarListPage> {
                       ),
                     ),
             ),
-      // Floating Action Buttons için daha modern bir yerleşim
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(
@@ -390,7 +373,6 @@ class _CarListPageState extends State<CarListPage> {
               ),
             ),
             Padding(
-              // Sağ tarafa padding eklendi
               padding: const EdgeInsets.only(right: 12),
               child: FloatingActionButton.extended(
                 heroTag: 'addFAB',
@@ -426,7 +408,6 @@ class _CarListPageState extends State<CarListPage> {
           ),
           child: Column(
             children: [
-              // Header kısmı
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -441,7 +422,6 @@ class _CarListPageState extends State<CarListPage> {
                 ),
                 child: Row(
                   children: [
-                    // Araç ikonu
                     CircleAvatar(
                       backgroundColor: car.isSold
                           ? Theme.of(context).colorScheme.secondary
@@ -454,7 +434,6 @@ class _CarListPageState extends State<CarListPage> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Araç başlık bilgileri - Model yazısını normal weight yap
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,13 +523,11 @@ class _CarListPageState extends State<CarListPage> {
                   ],
                 ),
               ),
-              // Content kısmı
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Özellikler satırı - Row yerine Wrap kullanıyoruz
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 2, vertical: 3),
@@ -562,8 +539,8 @@ class _CarListPageState extends State<CarListPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Wrap(
-                        spacing: 8, // Öğeler arası yatay boşluk
-                        runSpacing: 8, // Satırlar arası dikey boşluk
+                        spacing: 8,
+                        runSpacing: 8,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           _buildFeatureItem(
@@ -585,7 +562,6 @@ class _CarListPageState extends State<CarListPage> {
                         ],
                       ),
                     ),
-
                     Padding(
                       padding: const EdgeInsets.only(top: 8, bottom: 4),
                       child: Row(
@@ -608,8 +584,7 @@ class _CarListPageState extends State<CarListPage> {
                                 ),
                                 if (car.damageRecord != '0')
                                   Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 8), // Üst boşluğu azalt
+                                    padding: const EdgeInsets.only(top: 8),
                                     child: Text(
                                       'Hasar: ${car.damageRecord} TL',
                                       style: TextStyle(
@@ -621,12 +596,10 @@ class _CarListPageState extends State<CarListPage> {
                               ],
                             ),
                           ),
-                          // İşlem butonları
                           _buildActionButtons(car),
                         ],
                       ),
                     ),
-                    // Tarih bilgileri
                     const SizedBox(height: 8),
                     DefaultTextStyle(
                       style: Theme.of(context).textTheme.bodySmall!.copyWith(
@@ -771,7 +744,6 @@ class _CarListPageState extends State<CarListPage> {
           ),
           child: Column(
             children: [
-              // Dialog Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -798,7 +770,6 @@ class _CarListPageState extends State<CarListPage> {
                   ],
                 ),
               ),
-              // Form Content
               Expanded(
                 child: SingleChildScrollView(
                   padding:
@@ -809,7 +780,6 @@ class _CarListPageState extends State<CarListPage> {
                   ),
                 ),
               ),
-              // Action Buttons
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -902,7 +872,6 @@ class _CarListPageState extends State<CarListPage> {
           ),
           child: Column(
             children: [
-              // Dialog Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -946,7 +915,6 @@ class _CarListPageState extends State<CarListPage> {
                   ],
                 ),
               ),
-              // Form Content
               Expanded(
                 child: SingleChildScrollView(
                   padding:
@@ -958,7 +926,6 @@ class _CarListPageState extends State<CarListPage> {
                   ),
                 ),
               ),
-              // Action Buttons
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(

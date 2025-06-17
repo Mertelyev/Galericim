@@ -4,10 +4,9 @@ import 'package:galericim/services/logging_service.dart';
 void main() {
   group('LoggingService Tests', () {
     late LoggingService logger;
-
     setUp(() {
       logger = LoggingService();
-      logger.clearLogs(); // Clear any existing logs
+      logger.clearLogs();
     });
 
     test('should be singleton', () {
@@ -80,8 +79,6 @@ void main() {
       expect(logs[0].message, equals('First message'));
       expect(logs[1].message, equals('Second message'));
       expect(logs[2].message, equals('Third message'));
-
-      // Check timestamps are in order
       expect(
           logs[0].timestamp.isBefore(logs[1].timestamp) ||
               logs[0].timestamp.isAtSameMomentAs(logs[1].timestamp),
@@ -97,13 +94,12 @@ void main() {
       logger.warning('Warning message');
       logger.error('Error message');
       logger.critical('Critical message');
-
       final errorLogs = logger.getLogs(minLevel: LogLevel.error);
-      expect(errorLogs.length, equals(2)); // error + critical
+      expect(errorLogs.length, equals(2));
       expect(errorLogs.any((log) => log.message == 'Error message'), isTrue);
 
       final warningLogs = logger.getLogs(minLevel: LogLevel.warning);
-      expect(warningLogs.length, equals(3)); // warning + error + critical
+      expect(warningLogs.length, equals(3));
       expect(
           warningLogs.any((log) => log.message == 'Warning message'), isTrue);
     });
@@ -116,18 +112,15 @@ void main() {
       logger.clearLogs();
       expect(logger.getLogs().length, equals(0));
     });
-
     test('should limit log storage to maxLogEntries', () {
-      // Get the current max log entries (should be 1000 by default)
       for (int i = 0; i < 1005; i++) {
         logger.debug('Message $i');
       }
 
       final logs = logger.getLogs();
-      expect(logs.length, equals(1000)); // Should not exceed max
-      expect(
-          logs.first.message, equals('Message 5')); // First 5 should be removed
-      expect(logs.last.message, equals('Message 1004')); // Last should be kept
+      expect(logs.length, equals(1000));
+      expect(logs.first.message, equals('Message 5'));
+      expect(logs.last.message, equals('Message 1004'));
     });
 
     test('should format log entry correctly', () {
