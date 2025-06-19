@@ -808,7 +808,7 @@ class _TrendsPageState extends State<TrendsPage> {
   Widget _buildPerformanceMetrics() {
     final filteredCars = _getFilteredCars();
     final conversionRate =
-        cars.length > 0 ? (filteredCars.length / cars.length * 100) : 0;
+        cars.isNotEmpty ? (filteredCars.length / cars.length * 100) : 0;
     final highestPrice = _getHighestPrice();
     final lowestPrice = _getLowestPrice();
     final avgPrice = _getAveragePrice();
