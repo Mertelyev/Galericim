@@ -33,7 +33,8 @@ class _CarListPageState extends State<CarListPage> {
   String? selectedYear;
   RangeValues? priceRange;
   bool showOnlySoldCars = false;
-  bool showOnlyInStock = false;  String? selectedFuelType;
+  bool showOnlyInStock = false;
+  String? selectedFuelType;
   String? selectedTransmission;
   DateTime? selectedStartDate;
   DateTime? selectedEndDate;
@@ -826,12 +827,14 @@ class _CarListPageState extends State<CarListPage> {
                             kilometers:
                                 formData['kilometers']?.isNotEmpty == true
                                     ? formData['kilometers']
-                                    : null,                            fuelType: formData['fuelType']?.isNotEmpty == true
+                                    : null,
+                            fuelType: formData['fuelType']?.isNotEmpty == true
                                 ? formData['fuelType']
                                 : null,
-                            transmission: formData['transmission']?.isNotEmpty == true
-                                ? formData['transmission']
-                                : null,
+                            transmission:
+                                formData['transmission']?.isNotEmpty == true
+                                    ? formData['transmission']
+                                    : null,
                           ));
                           if (!mounted) return;
                           navigator.pop();
@@ -1011,7 +1014,8 @@ class _CarListPageState extends State<CarListPage> {
                                 kilometers:
                                     formData['kilometers']?.isNotEmpty == true
                                         ? formData['kilometers']
-                                        : car.kilometers,                                fuelType:
+                                        : car.kilometers,
+                                fuelType:
                                     formData['fuelType']?.isNotEmpty == true
                                         ? formData['fuelType']
                                         : car.fuelType,
@@ -1165,7 +1169,8 @@ class _CarListPageState extends State<CarListPage> {
                               isHighlighted: true),
                           if (car.kilometers != null)
                             _buildDetailRow(
-                                'Kilometre', '${car.kilometers} KM'),                          if (car.fuelType != null)
+                                'Kilometre', '${car.kilometers} KM'),
+                          if (car.fuelType != null)
                             _buildDetailRow('Yakıt Tipi', car.fuelType!),
                           if (car.transmission != null)
                             _buildDetailRow('Vites Tipi', car.transmission!),

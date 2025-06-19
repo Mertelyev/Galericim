@@ -237,7 +237,8 @@ class _CarFormState extends State<CarForm> {
                   'LPG',
                   'Benzin & LPG',
                   'Elektrik',
-                  'Hibrit',                ],
+                  'Hibrit',
+                ],
               ),
               const SizedBox(height: 16),
               _buildDropdownField(
