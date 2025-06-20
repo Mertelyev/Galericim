@@ -15,7 +15,7 @@ class _TrendsPageState extends State<TrendsPage>
     super.initState();
     _tabController = TabController(length: 7, vsync: this);
     _tabController.addListener(() {
-      setState(() {}); // Rebuild to update arrow button states
+      setState(() {});
     });
   }
 
@@ -1026,11 +1026,11 @@ class _TrendsPageState extends State<TrendsPage>
   Color _getRankColor(int index) {
     switch (index) {
       case 0:
-        return Colors.amber; // Gold
+        return Colors.amber;
       case 1:
-        return Colors.grey; // Silver
+        return Colors.grey;
       case 2:
-        return Colors.brown; // Bronze
+        return Colors.brown;
       default:
         return Colors.blue;
     }
