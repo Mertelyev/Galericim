@@ -1,9 +1,10 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'car.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'utils/error_handler.dart' as eh;
+import 'dart:io' show Platform;
 
 class DBHelper {
   static const int _latestVersion = 6;
@@ -56,9 +57,17 @@ class DBHelper {
 
   Future<Database> _initDB() async {
     try {
-      var path = join(await getDatabasesPath(), 'cars.db');
+      // Platform-specific database factory initialization
       if (kIsWeb) {
         databaseFactory = databaseFactoryFfiWeb;
+      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        // Desktop platforms için FFI kullan - initialization main.dart'ta yapıldı
+        // Burada sadece factory'yi set ediyoruz
+        databaseFactory = databaseFactoryFfi;
+      }
+
+      var path = join(await getDatabasesPath(), 'cars.db');
+      if (kIsWeb) {
         path = 'cars_web.db';
       }
 

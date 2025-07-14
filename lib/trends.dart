@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class TrendsPage extends StatefulWidget {
-  const TrendsPage({Key? key}) : super(key: key);
+  const TrendsPage({super.key});
 
   @override
   _TrendsPageState createState() => _TrendsPageState();
@@ -168,7 +168,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -310,7 +310,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -437,7 +437,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -598,7 +598,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -725,7 +725,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -866,7 +866,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -1018,7 +1018,7 @@ class _TrendsPageState extends State<TrendsPage>
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

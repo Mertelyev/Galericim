@@ -4,12 +4,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import './theme.dart';
 import './trends.dart';
 import './statistic.dart';
 import './settings.dart';
 import './carlist.dart';
 import './services/logging_service.dart';
+import 'dart:io' show Platform;
 
 void main() async {
   final logger = LoggingService();
@@ -22,9 +24,15 @@ void main() async {
       logger.info('Initializing database for web platform');
       databaseFactory = databaseFactoryFfiWeb;
       sqfliteFfiInit();
-    } else {
+    } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      logger.info('Initializing database for desktop platform');
+      // Desktop platformlar için sqlite3_flutter_libs ile init
+      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
+    } else {
+      // Mobile platformlar için default sqflite
+      logger.info('Using default sqflite for mobile platform');
     }
 
     logger.info('Creating theme provider');
